@@ -29,6 +29,6 @@ public class TaskStatsVO {
     @Schema(description = "准时完成率 0~1")
     private BigDecimal onTimeRate;
 
-    @Schema(description = "好友数")
-    private Integer friendCount;
+    @Schema(description = "帮手数")
+    private Integer helperCount;
 }

@@ -1,5 +1,6 @@
 const auth = require('../../services/auth')
-const friendApi = require('../../services/friend')
+const helperApi = require('../../services/helper')
+const agreementApi = require('../../services/agreement')
 const { getToken } = require('../../utils/request')
 
 Page({
@@ -7,18 +8,56 @@ Page({
     statusBarHeight: 20,
     loading: false,
     tip: '',
+    /** 是否已勾选同意协议：不勾不许登，后端也会二次校验 */
+    agreed: false,
+    /** 当前生效的协议版本，来自后端；登录时原样回传 */
+    agreementVersion: '',
   },
 
   onLoad(options) {
     this.redirect = options.redirect ? decodeURIComponent(options.redirect) : ''
     this.invite = options.invite || ''
     this.setData({ statusBarHeight: getApp().globalData.statusBarHeight })
+    // 协议版本异步拉，不阻塞首屏；静默续登用的是本地缓存的版本号，不依赖它
+    this.loadAgreement()
     // 已经登录过：静默续登，不走任何授权/引导
     if (getToken()) this.login(true)
   },
 
+  /** 拉当前协议版本（正文在协议页单独取，这里只要版本号） */
+  async loadAgreement() {
+    try {
+      const bundle = await agreementApi.current()
+      this.setData({ agreementVersion: bundle.version })
+    } catch (e) {
+      // 拉不到就让登录时后端报错，至少不会静默放行
+      this.setData({ tip: '协议内容加载失败，请检查网络后重试' })
+    }
+  },
+
+  /** 切换勾选 */
+  toggleAgree() {
+    this.setData({ agreed: !this.data.agreed })
+  },
+
+  /** 查看协议全文 */
+  goAgreement(e) {
+    const type = (e.currentTarget.dataset && e.currentTarget.dataset.type) || 'user'
+    wx.navigateTo({ url: '/pages/agreement/index?type=' + type })
+  },
+
   /** 按钮点击：登录 */
   onTapLogin() {
+    // 静默续登不经过这里，所以这里一定是用户主动点：必须已勾选
+    if (!this.data.agreed) {
+      wx.showToast({ title: '请先阅读并同意协议', icon: 'none' })
+      return
+    }
+    if (!this.data.agreementVersion) {
+      wx.showToast({ title: '协议加载中，请稍候', icon: 'none' })
+      this.loadAgreement()
+      return
+    }
     this.login(false)
   },
 
@@ -37,10 +76,11 @@ Page({
     this.setData({ loading: true, tip: '' })
 
     try {
-      const me = await auth.login()
+      // 静默续登用本地缓存的协议版本（用户已同意过），主动登录用刚勾选的最新版本
+      const me = await auth.login(null, silent ? '' : this.data.agreementVersion)
       if (this.invite) {
         try {
-          await friendApi.acceptInviteCode(this.invite)
+          await helperApi.acceptInviteCode(this.invite)
         } catch (e) {
           // 邀请码无效不阻断登录
         }
@@ -62,7 +102,7 @@ Page({
   },
 
   go() {
-    const tabs = ['pages/tasks/index/index', 'pages/friends/index/index', 'pages/mine/index/index']
+    const tabs = ['pages/tasks/index/index', 'pages/helpers/index/index', 'pages/mine/index/index']
     const target = this.redirect || 'pages/tasks/index/index'
     if (tabs.indexOf(target) >= 0) {
       wx.switchTab({ url: '/' + target })

@@ -1,4 +1,4 @@
-const friendApi = require('../../../services/friend')
+const helperApi = require('../../../services/helper')
 const taskApi = require('../../../services/task')
 const { presentUser } = require('../../../utils/present')
 
@@ -8,7 +8,7 @@ Page({
   data: {
     mode: 'create',
     keyword: '',
-    friends: [],
+    helpers: [],
     all: [],
     selected: [],
     loading: true,
@@ -37,30 +37,30 @@ Page({
   async load() {
     this.setData({ loading: true })
     try {
-      const raw = await friendApi.list()
-      // 注意：friend.id 是关系 id，选中与建任务用的是 userId
+      const raw = await helperApi.list()
+      // 注意：helper.id 是关系 id，选中与建任务用的是 userId
       const list = raw.map((f) =>
         Object.assign(
           presentUser({ id: f.userId, nickname: f.remark || f.nickname, avatarUrl: f.avatarUrl }),
-          { userId: f.userId, friendId: f.id, remark: f.remark, activeTaskCount: f.activeTaskCount }
+          { userId: f.userId, helperId: f.id, remark: f.remark, activeTaskCount: f.activeTaskCount }
         )
       )
-      let friends = list
+      let helpers = list
       // 追加模式：已经在任务里的人不再出现
       if (this.data.mode === 'add' && this.taskId) {
         try {
           const t = await taskApi.detail(this.taskId)
           const exists = (t.participants || []).map((p) => p.userId)
-          friends = list.filter((f) => exists.indexOf(f.userId) < 0)
+          helpers = list.filter((f) => exists.indexOf(f.userId) < 0)
         } catch (e) {
           // 拿不到就不过滤
         }
       }
-      const selected = friends.filter((f) => this.initialSelected.indexOf(f.id) >= 0).map((f) => f.id)
-      this.setData(Object.assign({ loading: false }, this.paint(friends, selected, '')))
+      const selected = helpers.filter((f) => this.initialSelected.indexOf(f.id) >= 0).map((f) => f.id)
+      this.setData(Object.assign({ loading: false }, this.paint(helpers, selected, '')))
     } catch (e) {
       this.setData({ loading: false })
-      wx.showToast({ title: e.message || '好友加载失败', icon: 'none' })
+      wx.showToast({ title: e.message || '帮手加载失败', icon: 'none' })
     }
   },
 
@@ -68,7 +68,7 @@ Page({
    * 勾选态必须提前算到每个 item 上：
    * WXML 表达式不支持函数调用，`selected.indexOf(item.id)` 会恒为假，选框永远不亮。
    *
-   * @param {Array} all      全量好友
+   * @param {Array} all      全量帮手
    * @param {Array} selected 已选中的 id
    * @param {string} keyword 搜索词（空串表示不筛）
    * @returns {Object} 可直接 setData 的对象
@@ -77,12 +77,12 @@ Page({
     const marked = all.map((f) =>
       Object.assign({}, f, { checked: selected.indexOf(f.id) >= 0 })
     )
-    const friends = keyword
+    const helpers = keyword
       ? marked.filter(
           (f) => f.nickname.indexOf(keyword) >= 0 || (f.remark || '').indexOf(keyword) >= 0
         )
       : marked
-    return { all: marked, friends, selected, keyword }
+    return { all: marked, helpers, selected, keyword }
   },
 
   onKeyword(e) {

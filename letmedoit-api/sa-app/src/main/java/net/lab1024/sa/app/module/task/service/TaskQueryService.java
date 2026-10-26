@@ -3,7 +3,7 @@ package net.lab1024.sa.app.module.task.service;
 import jakarta.annotation.Resource;
 import net.lab1024.sa.app.module.dict.constant.AppDictCode;
 import net.lab1024.sa.app.module.dict.service.AppDictService;
-import net.lab1024.sa.app.module.friend.dao.FriendDao;
+import net.lab1024.sa.app.module.helper.dao.HelperDao;
 import net.lab1024.sa.app.module.member.domain.entity.WxMemberEntity;
 import net.lab1024.sa.app.module.member.service.WxMemberService;
 import net.lab1024.sa.app.module.task.constant.CompletionModeEnum;
@@ -78,7 +78,7 @@ public class TaskQueryService {
     private WxMemberService wxMemberService;
 
     @Resource
-    private FriendDao friendDao;
+    private HelperDao helperDao;
 
     @Resource
     private AppDictService appDictService;
@@ -165,7 +165,7 @@ public class TaskQueryService {
         stats.setOnTimeRate(completed == 0
                 ? BigDecimal.ONE
                 : BigDecimal.valueOf(onTime).divide(BigDecimal.valueOf(completed), 2, RoundingMode.HALF_UP));
-        stats.setFriendCount(friendDao.countByMember(memberId, Boolean.FALSE));
+        stats.setHelperCount(helperDao.countByMember(memberId, Boolean.FALSE));
         return stats;
     }
 

@@ -8,12 +8,15 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import net.lab1024.sa.app.config.AppTokenConfig;
 import net.lab1024.sa.app.constant.AppRedisKeyConst;
+import net.lab1024.sa.app.module.agreement.service.AppAgreementService;
 import net.lab1024.sa.app.module.member.domain.RequestMember;
 import net.lab1024.sa.app.module.member.domain.entity.WxMemberEntity;
 import net.lab1024.sa.app.module.member.domain.form.WxLoginForm;
 import net.lab1024.sa.app.module.member.domain.vo.WxLoginResultVO;
 import net.lab1024.sa.app.module.member.domain.vo.WxMemberVO;
 import net.lab1024.sa.app.module.member.manager.WxMemberLoginManager;
+import net.lab1024.sa.app.module.security.constant.ContentBizTypeEnum;
+import net.lab1024.sa.app.module.security.service.ContentSecurityService;
 import net.lab1024.sa.app.module.wx.WxApiService;
 import net.lab1024.sa.app.module.wx.domain.WxSessionVO;
 import net.lab1024.sa.app.util.AppRequestUtil;
@@ -75,13 +78,33 @@ public class WxAuthService {
     @Resource
     private RedisService redisService;
 
+    @Resource
+    private ContentSecurityService contentSecurityService;
+
+    @Resource
+    private AppAgreementService appAgreementService;
+
     /**
      * 一键登录：code 换 openid -> 查/建会员 -> 签发 token
      */
     public ResponseDTO<WxLoginResultVO> login(WxLoginForm loginForm, String ip, String userAgent) {
         checkLoginLimit(ip);
 
+        // 协议是登录的前置条件：没勾选、或看的是旧版本，都不给登。
+        // 必须在这里拦，前端那个勾选框只能算提示，不具备约束力。
+        if (StrUtil.isBlank(loginForm.getAgreementVersion())) {
+            return ResponseDTO.userErrorParam("请先阅读并同意《用户协议》和《隐私政策》");
+        }
+        if (!appAgreementService.requiredVersion().equals(loginForm.getAgreementVersion())) {
+            return ResponseDTO.userErrorParam("协议已更新，请重新阅读并同意");
+        }
+
         WxSessionVO session = wxApiService.jscode2session(loginForm.getCode());
+
+        // 内容安全：登录时一并带上来的昵称也是 UGC，先过检测再落库
+        if (StrUtil.isNotBlank(loginForm.getNickname())) {
+            contentSecurityService.checkProfileText(session.getOpenId(), "昵称", loginForm.getNickname());
+        }
 
         // 前端把微信授权拿到的昵称头像一起带上来，拿不到就由服务端生成兜底昵称
         WxMemberEntity member = wxMemberService.getOrCreate(
@@ -100,6 +123,9 @@ public class WxAuthService {
             saveLoginLog(member, ip, userAgent, "账号已禁用", LoginLogResultEnum.LOGIN_FAIL);
             return ResponseDTO.userErrorParam("账号已被禁用，请联系客服");
         }
+
+        // 账号可用，本次同意落库留痕（时间 + 版本 + IP + UA），出现纠纷时唯一的举证材料
+        appAgreementService.agree(member.getMemberId(), loginForm.getAgreementVersion(), ip, userAgent);
 
         // 签发 token：loginId 用 memberId 字符串，避免反序列化后类型不一致
         stpAppLogic.login(String.valueOf(member.getMemberId()), LoginDeviceEnum.WEIXIN_MP.getDesc());
@@ -193,7 +219,14 @@ public class WxAuthService {
             avatarUrl = StrUtil.EMPTY;
         }
 
+        // 内容安全：昵称是资料类文本，命中风险直接拒绝
+        contentSecurityService.checkProfileText(current.getOpenId(), "昵称", name);
+
         wxMemberService.updateProfile(current.getMemberId(), name, avatarUrl);
+        // 内容安全：头像是公网图，走异步检测；判定违规后由推送回调清空
+        if (StrUtil.isNotBlank(avatarUrl)) {
+            contentSecurityService.checkImageAsync(ContentBizTypeEnum.AVATAR, avatarUrl);
+        }
         RequestMember refreshed = wxMemberLoginManager.loadLoginInfo(wxMemberService.getById(current.getMemberId()));
         return ResponseDTO.ok(SmartBeanUtil.copy(refreshed, WxMemberVO.class));
     }

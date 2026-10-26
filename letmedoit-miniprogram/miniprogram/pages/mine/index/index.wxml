@@ -26,8 +26,8 @@
         <text class="stat-label">准时率</text>
       </view>
       <view class="stat">
-        <text class="stat-num">{{stats.friendCount}}</text>
-        <text class="stat-label">好友</text>
+        <text class="stat-num">{{stats.helperCount}}</text>
+        <text class="stat-label">帮手</text>
       </view>
     </view>
 

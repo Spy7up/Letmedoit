@@ -1,5 +1,5 @@
 const taskApi = require('../../../services/task')
-const friendApi = require('../../../services/friend')
+const helperApi = require('../../../services/helper')
 const avatar = require('../../../utils/avatar')
 const entry = require('../../../utils/entry')
 const { presentUser } = require('../../../utils/present')
@@ -7,7 +7,7 @@ const { presentUser } = require('../../../utils/present')
 Page({
   data: {
     user: null,
-    stats: { sentCount: 0, completedCount: 0, onTimeRate: 1, friendCount: 0 },
+    stats: { sentCount: 0, completedCount: 0, onTimeRate: 1, helperCount: 0 },
     rateText: '100%',
     version: 'v1.1.0',
   },
@@ -39,10 +39,10 @@ Page({
       // 资料失败就保留上一次，统计继续拉
     }
 
-    // 会员资料里暂时可能没有邀请码（老版本接口），用好友邀请码接口兜住，别让页面空着
+    // 会员资料里暂时可能没有邀请码（老版本接口），用帮手邀请码接口兜住，别让页面空着
     if (user && !user.inviteCode) {
       try {
-        const invite = await friendApi.getInvite()
+        const invite = await helperApi.getInvite()
         if (invite && invite.inviteCode) this.setData({ 'user.inviteCode': invite.inviteCode })
       } catch (e) {
         // 邀请码取不到就显示占位符
@@ -89,7 +89,7 @@ Page({
   privacy() {
     wx.showModal({
       title: '隐私说明',
-      content: '仅收集头像、昵称用于在好友之间互相识别；任务内容只对参与者和布置者可见。',
+      content: '仅收集头像、昵称用于在帮手之间互相识别；任务内容只对参与者和布置者可见。',
       showCancel: false,
       confirmText: '知道了',
     })

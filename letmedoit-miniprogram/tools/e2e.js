@@ -117,12 +117,24 @@ function section(t) {
 const wait = (ms) => new Promise((r) => setTimeout(r, ms || 80))
 const api = (m) => require(path.join(ROOT, 'services/' + m))
 
+/**
+ * 协议版本：后端强制要求登录必须带（未同意不许登），这里取一次缓存复用。
+ * 指向 agreement 服务，走的是真实接口。
+ */
+let agreementVersion = ''
+async function ensureAgreement() {
+  if (!agreementVersion) {
+    agreementVersion = (await api('agreement').current()).version
+  }
+  return agreementVersion
+}
+
 /* ---------------- 账号 ---------------- */
 
 const ACC = {
   granny: 'e2e_granny_v1',
   kid: 'e2e_kid_v1',
-  // 每次跑用全新会员，保证「申请 → 同意」链路可重复验证（固定 code 第二次会撞「已经是好友了」）
+  // 每次跑用全新会员，保证「申请 → 同意」链路可重复验证（固定 code 第二次会撞「已经是帮手了」）
   third: 'e2e_third_' + Date.now(),
 }
 const users = {}
@@ -136,7 +148,7 @@ async function as(name, nickname) {
 
   if (!tokenCache[name]) {
     wx.removeStorageSync('lmd_app_token')
-    users[name] = await auth.login()
+    users[name] = await auth.login(null, await ensureAgreement())
     tokenCache[name] = storage['lmd_app_token']
   }
   wx.setStorageSync('lmd_app_token', tokenCache[name])
@@ -181,67 +193,67 @@ async function run() {
     lastHeaders['App-Token']
   )
 
-  section('[2] 邀请码加好友（面对面路径，无需确认）')
-  const friendSvc = api('friend')
-  const invite = await friendSvc.getInvite()
+  section('[2] 邀请码加帮手（面对面路径，无需确认）')
+  const helperSvc = api('helper')
+  const invite = await helperSvc.getInvite()
   check(!!invite.inviteCode, '奶奶的邀请码 ' + invite.inviteCode)
   check(!!invite.sharePath, '分享路径 ' + invite.sharePath)
 
   const kid = await as('kid', '小明')
   check(kid.id !== granny.id, '两个 mock code 得到两个不同会员 ' + granny.id + ' / ' + kid.id)
 
-  let kidFriends = await friendSvc.list()
-  const already = kidFriends.some((f) => f.userId === granny.id)
+  let kidHelpers = await helperSvc.list()
+  const already = kidHelpers.some((f) => f.userId === granny.id)
   if (!already) {
-    await friendSvc.acceptInviteCode(invite.inviteCode)
+    await helperSvc.acceptInviteCode(invite.inviteCode)
   }
-  kidFriends = await friendSvc.list()
-  const grannyInKid = kidFriends.find((f) => f.userId === granny.id)
-  check(!!grannyInKid, '小明的好友列表里有奶奶（好友 ' + kidFriends.length + ' 人）')
-  check(!!grannyInKid && !!grannyInKid.id, '好友项带 friendId ' + (grannyInKid && grannyInKid.id))
+  kidHelpers = await helperSvc.list()
+  const grannyInKid = kidHelpers.find((f) => f.userId === granny.id)
+  check(!!grannyInKid, '小明的帮手列表里有奶奶（帮手 ' + kidHelpers.length + ' 人）')
+  check(!!grannyInKid && !!grannyInKid.id, '帮手项带 helperId ' + (grannyInKid && grannyInKid.id))
   check(
     !!grannyInKid && !!grannyInKid.displayName,
     'displayName 回退昵称：' + (grannyInKid && grannyInKid.displayName)
   )
 
   // 邀请码预览：点开分享卡片的人要先看清「谁邀请我」，再决定加不加
-  const kidPreview = await friendSvc.invitePreview(invite.inviteCode)
+  const kidPreview = await helperSvc.invitePreview(invite.inviteCode)
   check(kidPreview.selfFlag === false, '别人查邀请码 → selfFlag=false')
-  check(kidPreview.friendFlag === true, '已是好友 → friendFlag=true')
+  check(kidPreview.helperFlag === true, '已是帮手 → helperFlag=true')
   check(!!kidPreview.nickname, '预览带邀请人昵称：' + kidPreview.nickname)
   await as('granny', '奶奶')
-  const ownPreview = await friendSvc.invitePreview(invite.inviteCode)
+  const ownPreview = await helperSvc.invitePreview(invite.inviteCode)
   check(ownPreview.selfFlag === true, '自己查自己的邀请码 → selfFlag=true')
 
-  section('[3] 好友申请 → 同意（双向）')
+  section('[3] 帮手申请 → 同意（双向）')
   const third = await as('third', '表姐')
-  const reqs = await friendSvc.listRequests()
+  const reqs = await helperSvc.listRequests()
   if (!reqs.some((r) => r.fromUser && r.fromUser.id === granny.id)) {
-    await friendSvc.request(granny.id, '我是奶奶')
+    await helperSvc.request(granny.id, '我是奶奶')
   }
   const mine = await as('granny', '奶奶')
   check(mine.id === granny.id, '切回奶奶账号，token 独立生效')
-  const inbox = await friendSvc.listRequests()
+  const inbox = await helperSvc.listRequests()
   const fromThird = inbox.find((r) => r.fromUser && r.fromUser.id === third.id)
   check(!!fromThird, '奶奶收到表姐的申请 ' + (fromThird && fromThird.message))
   if (fromThird) {
-    await friendSvc.acceptRequest(fromThird.id)
-    const after = await friendSvc.list()
-    check(after.some((f) => f.userId === third.id), '同意后成为好友，奶奶好友 ' + after.length + ' 人')
+    await helperSvc.acceptRequest(fromThird.id)
+    const after = await helperSvc.list()
+    check(after.some((f) => f.userId === third.id), '同意后成为帮手，奶奶帮手 ' + after.length + ' 人')
   }
 
   section('[4] 布置任务（多人 · 全员完成）')
-  // 表姐要能把任务布置给小明的任务，先让两人成为好友（后端要求参与者必须是好友）
+  // 表姐要能把任务布置给小明的任务，先让两人成为帮手（后端要求参与者必须是帮手）
   await as('kid', '小明')
-  const kidInvite = await friendSvc.getInvite()
+  const kidInvite = await helperSvc.getInvite()
   await as('third', '表姐')
-  const thirdFriends = await friendSvc.list()
-  if (!thirdFriends.some((f) => f.userId === users.kid.id)) {
-    await friendSvc.acceptInviteCode(kidInvite.inviteCode)
+  const thirdHelpers = await helperSvc.list()
+  if (!thirdHelpers.some((f) => f.userId === users.kid.id)) {
+    await helperSvc.acceptInviteCode(kidInvite.inviteCode)
   }
   check(
-    (await friendSvc.list()).some((f) => f.userId === users.kid.id),
-    '表姐与小明互为好友（第三方任务的前提）'
+    (await helperSvc.list()).some((f) => f.userId === users.kid.id),
+    '表姐与小明互为帮手（第三方任务的前提）'
   )
 
   await as('granny', '奶奶')
@@ -374,7 +386,7 @@ async function run() {
     check(typeof left === 'number', '标记已读后剩余未读 ' + left)
   }
 
-  section('[9] 摘要 / 统计 / 好友数')
+  section('[9] 摘要 / 统计 / 帮手数')
   await as('kid', '小明')
   const summary = await taskSvc.summary()
   check(typeof summary.assignee === 'number', '摘要-等我回应 ' + summary.assignee)
@@ -384,7 +396,7 @@ async function run() {
   const stats = await taskSvc.stats()
   check(typeof stats.receivedCount === 'number', '统计-收到 ' + stats.receivedCount)
   check(typeof stats.onTimeRate === 'number', '统计-准时率 ' + stats.onTimeRate)
-  check(stats.friendCount >= 1, '统计-好友数 ' + stats.friendCount)
+  check(stats.helperCount >= 1, '统计-帮手数 ' + stats.helperCount)
 
   section('[10] 列表筛选（枚举 → 后端查询）')
   const pendingList = await taskSvc.list({ role: 'assignee', status: 'pending' })
@@ -542,7 +554,7 @@ async function run() {
   // 拒绝授权：登录只带 code，服务端生成「用户XXXX」
   loginCode = 'e2e_anon_' + Date.now()
   wx.removeStorageSync('lmd_app_token')
-  const anon = await api('auth').login()
+  const anon = await api('auth').login(null, await ensureAgreement())
   check(/^用户[A-Z0-9]{4}$/.test(anon.nickname || ''), '未授权时兜底昵称 ' + anon.nickname)
   check(!anon.avatarUrl, '未授权时没有头像')
 
@@ -552,7 +564,7 @@ async function run() {
   const authed = await api('auth').login({
     nickname: '微信上的名字',
     avatarUrl: 'https://thirdwx.qlogo.cn/e2e.jpg',
-  })
+  }, await ensureAgreement())
   check(authed.nickname === '微信上的名字', '登录带微信昵称 ' + authed.nickname)
   check(authed.avatarUrl === 'https://thirdwx.qlogo.cn/e2e.jpg', '登录带微信头像')
 
@@ -562,7 +574,7 @@ async function run() {
   const placeholder = await api('auth').login({
     nickname: '微信用户',
     avatarUrl: 'https://thirdwx.qlogo.cn/grey.jpg',
-  })
+  }, await ensureAgreement())
   check(/^用户[A-Z0-9]{4}$/.test(placeholder.nickname || ''), '占位昵称被替换 ' + placeholder.nickname)
   check(!placeholder.avatarUrl, '占位授权不带灰色默认头像')
 

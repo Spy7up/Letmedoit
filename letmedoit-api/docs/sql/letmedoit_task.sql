@@ -3,32 +3,32 @@
 -- 项目：smart-admin / sa-app（小程序 C 端）
 -- 说明：
 --   1. 全部为新增表，不改动 t_employee / t_wx_member 等现有表
---   2. 与《让我做-v1.1-产品与技术方案》§5.4 对应；好友表沿用方案命名 t_friend
+--   2. 与《让我做-v1.1-产品与技术方案》§5.4 对应；帮手表沿用方案命名 t_helper
 --   3. 时间统一 datetime，状态统一 tinyint + 注释里列全取值（便于后台报表按状态聚合）
 --   4. 所有表带 create_time / update_time / deleted_flag，后台列表与逻辑删除复用
 -- ============================================================
 
 -- ------------------------------------------------------------
--- 1. 好友关系（双向双写：A→B 与 B→A 各一行，查询无需 OR）
+-- 1. 帮手关系（双向双写：A→B 与 B→A 各一行，查询无需 OR）
 -- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `t_friend` (
-  `friend_id`        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+CREATE TABLE IF NOT EXISTS `t_helper` (
+  `helper_id`        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
   `member_id`        BIGINT UNSIGNED NOT NULL                COMMENT '归属会员ID',
-  `friend_member_id` BIGINT UNSIGNED NOT NULL                COMMENT '好友会员ID',
+  `helper_member_id` BIGINT UNSIGNED NOT NULL                COMMENT '帮手会员ID',
   `remark`           VARCHAR(64)     DEFAULT NULL            COMMENT '备注名（覆盖对方昵称展示）',
   `deleted_flag`     TINYINT(1)      NOT NULL DEFAULT 0      COMMENT '是否删除 0否 1是',
   `create_time`      DATETIME        NOT NULL                COMMENT '创建时间',
   `update_time`      DATETIME        NOT NULL                COMMENT '更新时间',
-  PRIMARY KEY (`friend_id`),
-  UNIQUE KEY `uk_member_friend` (`member_id`, `friend_member_id`),
-  KEY `idx_friend_member` (`friend_member_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='好友关系';
+  PRIMARY KEY (`helper_id`),
+  UNIQUE KEY `uk_member_helper` (`member_id`, `helper_member_id`),
+  KEY `idx_helper_member` (`helper_member_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='帮手关系';
 
 -- ------------------------------------------------------------
--- 2. 好友申请
+-- 2. 帮手申请
 -- 同一对会员可有多条历史记录（拒绝后可再次申请），不做唯一约束
 -- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `t_friend_request` (
+CREATE TABLE IF NOT EXISTS `t_helper_request` (
   `request_id`      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
   `from_member_id`  BIGINT UNSIGNED NOT NULL                COMMENT '发起人会员ID',
   `to_member_id`    BIGINT UNSIGNED NOT NULL                COMMENT '接收人会员ID',
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS `t_friend_request` (
   PRIMARY KEY (`request_id`),
   KEY `idx_to_status` (`to_member_id`, `status`),
   KEY `idx_from_status` (`from_member_id`, `status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='好友申请';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='帮手申请';
 
 -- ------------------------------------------------------------
 -- 3. 任务主表
@@ -129,9 +129,9 @@ CREATE TABLE IF NOT EXISTS `t_task_notice` (
 
 -- ------------------------------------------------------------
 -- 7. 会员表扩展：邀请码
--- 原 t_wx_member 只有 openid/手机号，加好友需要一个可读可转发的短码。
+-- 原 t_wx_member 只有 openid/手机号，加帮手需要一个可读可转发的短码。
 -- 唯一索引兜住并发注册；生成逻辑见 WxMemberService#initInviteCode（插入后回填 + 冲突重试）
 -- ------------------------------------------------------------
 ALTER TABLE `t_wx_member`
-  ADD COLUMN `invite_code` VARCHAR(8) DEFAULT NULL COMMENT '邀请码（6位，加好友用）' AFTER `phone`,
+  ADD COLUMN `invite_code` VARCHAR(8) DEFAULT NULL COMMENT '邀请码（6位，加帮手用）' AFTER `phone`,
   ADD UNIQUE KEY `uk_invite_code` (`invite_code`);

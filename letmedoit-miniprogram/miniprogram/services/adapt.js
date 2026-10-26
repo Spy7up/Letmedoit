@@ -160,10 +160,10 @@ function detail(vo) {
   }
 }
 
-/** FriendVO */
-function friend(vo) {
+/** HelperVO */
+function helper(vo) {
   return {
-    id: id(vo.friendId),
+    id: id(vo.helperId),
     userId: id(vo.memberId),
     nickname: vo.nickname || '',
     avatarUrl: vo.avatar || '',
@@ -174,7 +174,7 @@ function friend(vo) {
   }
 }
 
-/** FriendRequestVO */
+/** HelperRequestVO */
 function request(vo) {
   return {
     id: id(vo.requestId),
@@ -204,7 +204,7 @@ module.exports = {
   listItem,
   detail,
   event,
-  friend,
+  helper,
   request,
   notice,
 }

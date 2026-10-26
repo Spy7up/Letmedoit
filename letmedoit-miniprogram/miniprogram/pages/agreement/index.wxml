@@ -1,0 +1,47 @@
+<view class="doc">
+  <view class="doc-head">
+    <text class="doc-title">{{title}}</text>
+    <view class="doc-meta">
+      <text wx:if="{{version}}" class="doc-meta-item">版本 {{version}}</text>
+      <text wx:if="{{effectiveDate}}" class="doc-meta-item">生效日期 {{effectiveDate}}</text>
+    </view>
+  </view>
+
+  <view class="doc-loading" wx:if="{{loading}}">
+    <text class="doc-muted">加载中…</text>
+  </view>
+
+  <view class="doc-error" wx:elif="{{error}}">
+    <text class="doc-err">{{error}}</text>
+    <view class="btn btn-ghost doc-retry" bindtap="retry">重试</view>
+  </view>
+
+  <block wx:else>
+    <block wx:for="{{blocks}}" wx:key="index">
+      <text class="h1" wx:if="{{item.type === 'h1'}}">{{item.text}}</text>
+      <text class="h2" wx:elif="{{item.type === 'h2'}}">{{item.text}}</text>
+      <text class="h3" wx:elif="{{item.type === 'h3'}}">{{item.text}}</text>
+      <view class="gap" wx:elif="{{item.type === 'gap'}}"></view>
+      <scroll-view class="tbl" scroll-x wx:elif="{{item.type === 'table'}}">
+        <view
+          class="tbl-row"
+          wx:for="{{item.rows}}"
+          wx:for-item="cells"
+          wx:for-index="ri"
+          wx:key="index"
+        >
+          <text
+            class="tbl-cell {{ri === 0 ? 'tbl-th' : ''}}"
+            wx:for="{{cells}}"
+            wx:for-item="cell"
+            wx:for-index="ci"
+            wx:key="index"
+          >{{cell}}</text>
+        </view>
+      </scroll-view>
+      <text class="p" wx:else>{{item.text}}</text>
+    </block>
+  </block>
+
+  <view class="doc-foot"></view>
+</view>

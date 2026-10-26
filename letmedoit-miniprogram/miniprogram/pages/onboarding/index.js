@@ -4,7 +4,7 @@ const avatar = require('../../utils/avatar')
 const { presentUser } = require('../../utils/present')
 
 /** 底部 tab 页要用 switchTab 打开，否则会多压一层 */
-const TABS = ['pages/tasks/index/index', 'pages/friends/index/index', 'pages/mine/index/index']
+const TABS = ['pages/tasks/index/index', 'pages/helpers/index/index', 'pages/mine/index/index']
 
 const DEFAULT_NEXT = 'pages/tasks/index/index'
 

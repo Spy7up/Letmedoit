@@ -3,6 +3,8 @@ package net.lab1024.sa.app.module.file.service;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import net.lab1024.sa.app.module.member.domain.RequestMember;
+import net.lab1024.sa.app.module.security.constant.ContentBizTypeEnum;
+import net.lab1024.sa.app.module.security.service.ContentSecurityService;
 import net.lab1024.sa.app.util.AppRequestUtil;
 import net.lab1024.sa.base.common.code.UserErrorCode;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
@@ -57,6 +59,9 @@ public class AppFileService {
 
     @Resource
     private FileDao fileDao;
+
+    @Resource
+    private ContentSecurityService contentSecurityService;
 
     /**
      * 上传图片
@@ -116,6 +121,12 @@ public class AppFileService {
         entity.setCreatorUserType(member.getUserType().getValue());
         fileDao.insert(entity);
         vo.setFileId(entity.getFileId());
+
+        // 内容安全：所有上传图片都要送微信异步检测（审核硬要求）。
+        // 检测结论 30 分钟内通过消息推送回传，判定违规由 ContentTakedownService 自动下架。
+        contentSecurityService.checkImageAsync(
+                "avatar".equalsIgnoreCase(bizType) ? ContentBizTypeEnum.AVATAR : ContentBizTypeEnum.TASK_IMAGE,
+                vo.getFileUrl());
 
         return ResponseDTO.ok(vo);
     }

@@ -79,7 +79,7 @@ public class WxMemberService {
     }
 
     /**
-     * 按邀请码查询会员（加好友用）
+     * 按邀请码查询会员（加帮手用）
      */
     public WxMemberEntity getByInviteCode(String inviteCode) {
         if (StrUtil.isBlank(inviteCode)) {
@@ -89,7 +89,7 @@ public class WxMemberService {
     }
 
     /**
-     * 批量查询会员：任务参与者、好友列表统一走这里，避免循环查库
+     * 批量查询会员：任务参与者、帮手列表统一走这里，避免循环查库
      */
     public List<WxMemberEntity> queryByIds(Collection<Long> memberIds) {
         if (memberIds == null || memberIds.isEmpty()) {
@@ -109,7 +109,7 @@ public class WxMemberService {
         WxMemberEntity exist = getByOpenId(openId);
         if (exist != null) {
             ensureInviteCode(exist);
-            // 老会员没昵称（早于本功能注册）也要有名字，否则好友列表里一片空白
+            // 老会员没昵称（早于本功能注册）也要有名字，否则帮手列表里一片空白
             ensureProfile(exist, null, null);
             return exist;
         }

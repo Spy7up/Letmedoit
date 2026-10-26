@@ -38,7 +38,7 @@ public class RequestMember implements RequestUser, Serializable {
     private String phone;
 
     /**
-     * 邀请码（6 位，加好友用）；由 WxMemberService 懒生成
+     * 邀请码（6 位，加帮手用）；由 WxMemberService 懒生成
      */
     private String inviteCode;
 

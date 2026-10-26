@@ -30,7 +30,7 @@
 
       <view class="tip">
         <image class="ic-sm" src="/images/icons/bell-brand.png" />
-        <text>头像只在你手机上显示，好友看到的是你名字的最后一个字</text>
+        <text>头像只在你手机上显示，帮手看到的是你名字的最后一个字</text>
       </view>
 
       <view class="actionbar-space"></view>

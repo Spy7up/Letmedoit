@@ -1,6 +1,0 @@
-{
-  "navigationBarTitleText": "加好友",
-  "usingComponents": {
-    "user-avatar": "/components/user-avatar/index"
-  }
-}

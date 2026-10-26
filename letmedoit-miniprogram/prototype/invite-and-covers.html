@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>分享封面 + 加好友页</title>
+<title>分享封面 + 加帮手页</title>
 <style>
   :root {
     --brand: #FF6B4A;
@@ -140,7 +140,7 @@
       radial-gradient(circle at 6% 98%, rgba(126,140,255,.4), rgba(126,140,255,0) 62%),
       linear-gradient(128deg, #FF6435, #FF8F57 50%, #FFB887);
   }
-  .cover-friend {
+  .cover-helper {
     background:
       radial-gradient(circle at 12% 8%, rgba(255,255,255,.22), rgba(255,255,255,0) 60%),
       radial-gradient(circle at 90% 95%, rgba(14,118,88,.5), rgba(14,118,88,0) 60%),
@@ -153,7 +153,7 @@
       linear-gradient(160deg, #CFE3F5, #9EC3E4 48%, #6E9CC4);
   }
 
-  /* ---------- 加好友页 ---------- */
+  /* ---------- 加帮手页 ---------- */
   .inv { padding: 0 4px; }
   .inv-head {
     display: flex; flex-direction: column; align-items: center; gap: 8px;
@@ -182,7 +182,7 @@
   .inv-about-t { font-size: 12.5px; font-weight: 600; color: var(--ink2); text-align: center; }
   .inv-about-s { font-size: 11px; color: var(--ink3); text-align: center; }
 
-  /* 好友列表（自己打开时的落地） */
+  /* 帮手列表（自己打开时的落地） */
   .list-row {
     display: flex; align-items: center; gap: 9px;
     padding: 11px 13px; background: #fff; border-radius: 14px;
@@ -233,12 +233,12 @@
 <div class="wrap">
 
   <header class="page-head">
-    <span class="kicker">原型 · 分享封面 + 加好友页</span>
+    <span class="kicker">原型 · 分享封面 + 加帮手页</span>
     <h1>转发出去的两张脸</h1>
     <p>
       分享卡片在聊天里只有 100×80，能不能点开几乎全看那一块封面。
       所以做了两张：<strong>任务卡片</strong>用橘色 + 勾选框（有任务附图就直接用图），
-      <strong>加好友卡片</strong>用薄荷绿 + 双圆环加号，一眼分得清是哪件事。
+      <strong>加帮手卡片</strong>用薄荷绿 + 双圆环加号，一眼分得清是哪件事。
     </p>
   </header>
 
@@ -314,12 +314,12 @@
     </div>
   </section>
 
-  <!-- ========== 2. 加好友 ========== -->
+  <!-- ========== 2. 加帮手 ========== -->
   <section>
-    <div class="sec-head"><span class="sec-no">2</span><h2>加好友：独立页面，先看清是谁再决定</h2></div>
+    <div class="sec-head"><span class="sec-no">2</span><h2>加帮手：独立页面，先看清是谁再决定</h2></div>
     <p class="sec-sub">
-      以前分享走的是登录页（<code>?invite=码</code>），对方点开先看到"请先登录"，加好友的过程被藏在登录里。
-      现在有独立页面：<strong>谁邀请你 → 邀请码 → 加为好友</strong>，三步看完。自己点自己的卡片则直接回好友列表。
+      以前分享走的是登录页（<code>?invite=码</code>），对方点开先看到"请先登录"，加帮手的过程被藏在登录里。
+      现在有独立页面：<strong>谁邀请你 → 邀请码 → 加为帮手</strong>，三步看完。自己点自己的卡片则直接回帮手列表。
     </p>
 
     <div class="grid">
@@ -332,7 +332,7 @@
             <div class="msg">
               <div class="msg-av av-a">妈</div>
               <div class="wxcard">
-                <div class="wxcard-cover cover-friend">
+                <div class="wxcard-cover cover-helper">
                   <svg viewBox="0 0 400 320" preserveAspectRatio="xMidYMid slice">
                     <circle cx="152" cy="198" r="54" fill="none" stroke="#fff" stroke-opacity=".62" stroke-width="6.8"/>
                     <circle cx="228" cy="186" r="54" fill="none" stroke="#fff" stroke-opacity=".44" stroke-width="6.8"/>
@@ -341,7 +341,7 @@
                   </svg>
                 </div>
                 <div class="wxcard-body">
-                  <div class="wxcard-title">妈妈 想加你为好友，一起用「让我做」</div>
+                  <div class="wxcard-title">妈妈 想加你为帮手，一起用「让我做」</div>
                   <div class="wxcard-meta"><span class="mini-logo">让</span><span>让我做 · 小程序</span></div>
                 </div>
               </div>
@@ -349,7 +349,7 @@
             <div class="wx-time">下午 4:20</div>
           </div>
         </div>
-        <figcaption><span class="cap-tag cap-new">卡片</span>薄荷绿和任务卡片的橘色分得开，双圆环 + 加号 = 加好友</figcaption>
+        <figcaption><span class="cap-tag cap-new">卡片</span>薄荷绿和任务卡片的橘色分得开，双圆环 + 加号 = 加帮手</figcaption>
       </div>
 
       <div class="col">
@@ -360,7 +360,7 @@
             <div class="inv">
               <div class="inv-head">
                 <div class="inv-av av-a">妈</div>
-                <div class="inv-from">妈妈 想加你为好友</div>
+                <div class="inv-from">妈妈 想加你为帮手</div>
                 <div class="inv-hint">加上之后，可以互相派活、互相提醒</div>
               </div>
 
@@ -370,7 +370,7 @@
               </div>
 
               <div class="inv-about">
-                <div class="inv-about-t">「让我做」是给家人朋友派小事的小程序</div>
+                <div class="inv-about-t">「让我做」是给家里人派小事的小程序</div>
                 <div class="inv-about-s">说一遍就够，做完自动通知你</div>
               </div>
             </div>
@@ -378,21 +378,21 @@
           <div class="actionbar-float">
             <div class="fbtn fbtn-primary">
               <svg class="fbtn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-              <span>加为好友</span>
+              <span>加为帮手</span>
             </div>
           </div>
         </div>
-        <figcaption><span class="cap-tag cap-good">加好友页</span>一个动作，按钮悬浮在底部</figcaption>
+        <figcaption><span class="cap-tag cap-good">加帮手页</span>一个动作，按钮悬浮在底部</figcaption>
       </div>
 
       <div class="col">
         <div class="phone">
           <div class="statusbar"><span>9:41</span><span class="dots"><i></i><i></i><i></i></span></div>
-          <div class="nav"><span class="back"></span><span>好友</span></div>
+          <div class="nav"><span class="back"></span><span>帮手</span></div>
           <div class="screen">
             <div style="padding:16px 4px">
               <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
-                <span style="font-size:11px;font-weight:700;color:var(--ink3)">我的好友</span>
+                <span style="font-size:11px;font-weight:700;color:var(--ink3)">我的帮手</span>
                 <span style="font-size:11px;color:var(--ink3)">· 3</span>
               </div>
               <div class="list-row">
@@ -419,17 +419,17 @@
             </div>
           </div>
         </div>
-        <figcaption><span class="cap-tag cap-info">兜底</span>自己点自己的卡片、或加完好友后，都落到这里</figcaption>
+        <figcaption><span class="cap-tag cap-info">兜底</span>自己点自己的卡片、或加完帮手后，都落到这里</figcaption>
       </div>
     </div>
 
     <div class="note">
-      <h3>为什么加好友要单独一页</h3>
+      <h3>为什么加帮手要单独一页</h3>
       <p>
         原来的路径是 <code>/pages/launch/index?invite=码</code>。问题有两个：
       </p>
       <p>
-        <strong>1. 已经登录的人会莫名看到登录页</strong>（或闪一下），而且加好友是"登录的副作用"——
+        <strong>1. 已经登录的人会莫名看到登录页</strong>（或闪一下），而且加帮手是"登录的副作用"——
         用户根本不知道自己加了谁。
       </p>
       <p>
@@ -438,7 +438,7 @@
       </p>
       <p>
         新页面先请求一个预览接口拿到邀请人信息（只返回昵称、头像和两个判定位，
-        不暴露对方的好友数和任务数），再让用户决定。
+        不暴露对方的帮手数和任务数），再让用户决定。
       </p>
     </div>
   </section>
@@ -456,8 +456,8 @@
         一开始画的是圆环，看小图像只眼睛，换成勾选框后一眼就是"待办"。
       </p>
       <p>
-        <strong>加好友封面</strong>：薄荷绿渐变 + 两个交叠圆环 + 右上角加号。
-        用绿色不只是好看——任务卡片是橘的，聊天里两种颜色一眼分得清"这是加好友还是派活"。
+        <strong>加帮手封面</strong>：薄荷绿渐变 + 两个交叠圆环 + 右上角加号。
+        用绿色不只是好看——任务卡片是橘的，聊天里两种颜色一眼分得清"这是加帮手还是派活"。
       </p>
       <p>
         体积：两张一共 54KB（用了 PNG Up filter，比不压缩省了一半）。分享图在卡片里只显示 100×80，

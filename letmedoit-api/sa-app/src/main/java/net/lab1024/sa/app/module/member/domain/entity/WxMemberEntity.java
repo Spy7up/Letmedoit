@@ -39,7 +39,7 @@ public class WxMemberEntity {
     private String phone;
 
     /**
-     * 邀请码（6 位，加好友用）
+     * 邀请码（6 位，加帮手用）
      */
     private String inviteCode;
 

@@ -1,6 +1,6 @@
 # 让我做（letmedoit）
 
-> 好友间的日常任务委托与提醒。别人让你做的小事，说一遍就够。
+> 帮手间的日常任务委托与提醒。别人让你做的小事，说一遍就够。
 
 微信小程序，原生 WXML/WXSS。**已接真实后端**：所有接口走 `letmedoit-api`（SpringBoot / sa-app），本地无后端时可用 `tools/contract-server.js` 起一个同契约的替身。
 
@@ -39,9 +39,9 @@ letmedoit/
 │   │   │   │   ├── complete/    # 完成我这份（备注 + 凭证）
 │   │   │   │   └── participants/ # 选参与者 / 追加参与者
 │   │   │   ├── messages/index/  # 服务通知中心（与微信同构）
-│   │   │   ├── friends/         # 好友（含内嵌添加好友）/ 好友详情
+│   │   │   ├── helpers/         # 帮手（含内嵌添加帮手）/ 帮手详情
 │   │   │   └── mine/            # 我的 / 头像昵称 / 提醒设置
-│   │   ├── services/            # 领域方法：auth / friend / task / notice + adapt（VO→页面模型）
+│   │   ├── services/            # 领域方法：auth / helper / task / notice + adapt（VO→页面模型）
 │   │   ├── utils/               # request 封装、格式化、展示层派生
 │   │   ├── constants/           # 状态与文案映射、后端数值枚举（唯一出口）
 │   │   ├── config/              # 环境开关、接口地址
@@ -83,7 +83,7 @@ const ENV = 'dev'   // 'dev' 局域网 sa-app（192.168.31.79:8081）｜ 'prod' 
 | 模块 | 状态 |
 |---|---|
 | 微信登录 / 资料初始化 | ✅ 一键登录（sa-app mock openid，本地无需真实 AppID），头像昵称可改 |
-| 好友：邀请码、请求、列表、解除 | ✅ |
+| 帮手：邀请码、请求、列表、解除 | ✅ |
 | 布置任务：多选参与者、标题、描述、完成条件、截止、提醒、定时生效 | ✅ |
 | 任务列表：收到的 / 发出的、5 种筛选、分页、下拉刷新 | ✅ |
 | 任务详情：进度、每人状态、备注查看、时间线 | ✅ |
@@ -113,7 +113,7 @@ const ENV = 'dev'   // 'dev' 局域网 sa-app（192.168.31.79:8081）｜ 'prod' 
 
 ```bash
 node tools/check.js                # 静态检查：页面四件套、JS 语法、require 路径、图片引用、跳转目标、事件绑定
-node tools/sim.js                  # 离线自检：起契约替身 + 桩跑真实页面（登录→列表→接受→详情→完成→布置→通知→好友）
+node tools/sim.js                  # 离线自检：起契约替身 + 桩跑真实页面（登录→列表→接受→详情→完成→布置→通知→帮手）
 node tools/e2e.js                  # 真后端联调：默认连 config 里的 dev 地址，逐条验接口契约与业务规则
 node tools/e2e.js http://ip:8081   # 指定其他后端
 node tools/contract-server.js      # 单独起契约替身（1025），给开发者工具当后端用

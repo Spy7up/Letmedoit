@@ -55,7 +55,12 @@ public enum NoticeTemplateEnum {
 
     TASK_EDITED("TASK_EDITED", "任务变更通知"),
 
-    TASK_CANCELLED("TASK_CANCELLED", "任务取消通知");
+    TASK_CANCELLED("TASK_CANCELLED", "任务取消通知"),
+
+    /**
+     * 委托人收：图片被内容安全判定违规，已自动移除
+     */
+    CONTENT_TAKEDOWN("CONTENT_TAKEDOWN", "内容安全处理通知");
 
     private final String key;
 

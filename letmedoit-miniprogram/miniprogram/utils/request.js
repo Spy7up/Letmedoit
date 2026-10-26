@@ -13,6 +13,14 @@ const config = require('../config/index')
 
 const TOKEN_KEY = 'lmd_app_token'
 
+/**
+ * 上次同意过的协议版本号
+ * <p>
+ * 后端要求登录必须带版本号，token 过期静默重登时用户没有交互机会，
+ * 只能沿用这份本地记录。
+ */
+const AGREEMENT_KEY = 'lmd_agreement_version'
+
 /** 后端登录态失效错误码，见 UserErrorCode.LOGIN_STATE_INVALID */
 const CODE_LOGIN_INVALID = 30007
 /** 本地兜底：网络层失败 */
@@ -108,7 +116,7 @@ function wxLoginCode() {
  * @param {{nickname?:string, avatarUrl?:string}} profile 微信授权拿到的资料，拒绝授权时不传
  * @returns {Promise<{token:string, tokenName:string, member:object, newUser:boolean}>}
  */
-async function silentLogin(profile) {
+async function silentLogin(profile, agreementVersion) {
   const code = await wxLoginCode()
   const data = { code }
   // 只有真的拿到微信资料才带上去；后端会用「用户XXXX」兜底
@@ -116,10 +124,32 @@ async function silentLogin(profile) {
     data.nickname = profile.nickname
     data.avatar = profile.avatarUrl || ''
   }
+  // 协议版本：优先用本次勾选传入的，否则沿用上次同意过的。
+  // 后端拿不到就拒绝登录（审核要求必须同意才能用），所以本地要兜一份，
+  // 否则 token 过期静默重登会因为没有版本号而失败。
+  const version = agreementVersion || getAgreedVersion()
+  if (version) data.agreementVersion = version
+
   const envelope = await send({ url: '/api/auth/login', method: 'POST', data, auth: false })
   if (envelope.code !== 0 || !envelope.data) throw makeError(envelope, '登录失败')
   setToken(envelope.data.token)
+  if (version) {
+    try {
+      wx.setStorageSync(AGREEMENT_KEY, version)
+    } catch (e) {
+      // 存不下不影响本次登录
+    }
+  }
   return envelope.data
+}
+
+/** 上次同意过的协议版本（token 过期静默重登时回传） */
+function getAgreedVersion() {
+  try {
+    return wx.getStorageSync(AGREEMENT_KEY) || ''
+  } catch (e) {
+    return ''
+  }
 }
 
 function relogin() {

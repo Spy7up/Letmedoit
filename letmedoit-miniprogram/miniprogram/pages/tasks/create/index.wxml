@@ -17,7 +17,7 @@
             <image class="ic-sm" src="/images/icons/plus-muted.png" />
           </view>
         </view>
-        <text class="pick-hint">{{participants.length ? '已选 ' + participants.length + ' 人' : '从好友里选'}}</text>
+        <text class="pick-hint">{{participants.length ? '已选 ' + participants.length + ' 人' : '从帮手里选'}}</text>
         <image class="ic-sm" src="/images/icons/chevron-ghost.png" />
       </view>
       <text class="pick-tip" wx:if="{{editing}}">已经交给的人不能在这里改</text>

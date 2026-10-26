@@ -86,3 +86,57 @@
   text-align: center;
   line-height: 1.6;
 }
+
+/* ---------------- 协议勾选 ---------------- */
+
+.agree {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 22rpx;
+  padding: 0 6rpx;
+}
+
+.agree-box {
+  flex: 0 0 auto;
+  width: 34rpx;
+  height: 34rpx;
+  margin-top: 2rpx;
+  margin-right: 12rpx;
+  border: 2rpx solid #C9BEB4;
+  border-radius: 8rpx;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #FFFFFF;
+}
+
+.agree-box-on {
+  background: #D64C28;
+  border-color: #D64C28;
+}
+
+.agree-tick {
+  width: 22rpx;
+  height: 22rpx;
+}
+
+.agree-text {
+  flex: 1;
+  font-size: 24rpx;
+  line-height: 1.55;
+  color: #8C8179;
+}
+
+.agree-plain {
+  color: #8C8179;
+}
+
+.agree-link {
+  color: #D64C28;
+}
+
+/* 未勾选时按钮压暗，但保留可点（点了给提示，比直接禁用更清楚） */
+.btn-locked {
+  opacity: 0.55;
+}

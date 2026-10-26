@@ -15,7 +15,7 @@ letmedoit-api/
 ├── sa-app/      # 小程序 C 端接口（本项目主战场）
 │   ├── module/auth      # /api/auth/login、logout、phone
 │   ├── module/member    # /api/member/info、profile
-│   ├── module/friend    # 好友、申请、邀请码
+│   ├── module/helper    # 帮手、申请、邀请码
 │   ├── module/task      # 任务全状态机（含 TaskScheduleJob 定时作业）
 │   ├── module/notice    # 站内通知中心（唯一通知通道）
 │   └── module/wx        # 微信接口封装（mock 可开关）
