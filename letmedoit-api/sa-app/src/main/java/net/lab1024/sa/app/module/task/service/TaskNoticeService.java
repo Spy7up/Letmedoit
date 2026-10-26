@@ -1,0 +1,266 @@
+package net.lab1024.sa.app.module.task.service;
+
+import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import jakarta.annotation.Resource;
+import net.lab1024.sa.app.module.dict.constant.AppDictCode;
+import net.lab1024.sa.app.module.dict.service.AppDictService;
+import net.lab1024.sa.app.module.notice.constant.NoticeTemplateEnum;
+import net.lab1024.sa.app.module.notice.dao.NoticeDao;
+import net.lab1024.sa.app.module.notice.domain.entity.NoticeEntity;
+import net.lab1024.sa.app.module.notice.domain.vo.NoticeVO;
+import net.lab1024.sa.app.module.task.constant.CompletionModeEnum;
+import net.lab1024.sa.app.module.task.domain.entity.TaskEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * 任务相关通知的生成
+ * <p>
+ * 只负责「写通知表」，t_task_notice 是小程序内消息中心的事实来源。
+ * <p>
+ * 字段顺序与消息中心的渲染格式一一对应，第一个永远是任务名称。
+ *
+ * @author letmedoit
+ */
+@Service
+public class TaskNoticeService {
+
+    /**
+     * 通知里的时间展示格式
+     */
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+    /**
+     * 单条通知最多 4 行
+     */
+    private static final int MAX_FIELDS = 4;
+
+    @Resource
+    private NoticeDao noticeDao;
+
+    @Resource
+    private AppDictService appDictService;
+
+    /**
+     * 任务委托通知：发给每个参与者
+     *
+     * @param task           任务
+     * @param creatorName    委托人昵称
+     * @param participantIds 接收人（不含委托人自己）
+     * @param totalCount     参与者总数，用于展示「共 N 人」
+     */
+    public void notifyAssigned(TaskEntity task, String creatorName, List<Long> participantIds, int totalCount) {
+        if (CollectionUtils.isEmpty(participantIds)) {
+            return;
+        }
+        CompletionModeEnum mode = CompletionModeEnum.ALL.getValue().equals(task.getCompletionMode())
+                ? CompletionModeEnum.ALL : CompletionModeEnum.ANY;
+        // 文案走数据字典 TASK_COMPLETION_MODE；通知内容落库后不再变，改字典只影响新通知
+        String modeText = appDictService.label(AppDictCode.TASK_COMPLETION_MODE, mode);
+        List<NoticeVO.Field> fields = Arrays.asList(
+                new NoticeVO.Field("任务名称", task.getTitle()),
+                new NoticeVO.Field("委托人", creatorName),
+                new NoticeVO.Field("参与人数", "共 " + totalCount + " 人（" + modeText + "）"),
+                new NoticeVO.Field("截止时间", formatTime(task.getDeadline()))
+        );
+        insertBatch(participantIds, task.getTaskId(), NoticeTemplateEnum.TASK_ASSIGNED, fields);
+    }
+
+    /**
+     * 任务完成通知：发给委托人
+     *
+     * @param task          任务
+     * @param completerName 完成人昵称
+     * @param creatorId     收件人（委托人）
+     * @param doneCount     已完成人数
+     * @param totalCount    参与总人数
+     * @param allDone       是否整单结束
+     */
+    public void notifyCompleted(TaskEntity task, String completerName, Long creatorId,
+                                int doneCount, int totalCount, boolean allDone) {
+        NoticeTemplateEnum template = allDone ? NoticeTemplateEnum.TASK_ALL_DONE : NoticeTemplateEnum.TASK_COMPLETED;
+        List<NoticeVO.Field> fields = allDone
+                ? Arrays.asList(
+                        new NoticeVO.Field("任务名称", task.getTitle()),
+                        new NoticeVO.Field("最后完成人", completerName),
+                        new NoticeVO.Field("完成时间", formatTime(LocalDateTime.now())),
+                        new NoticeVO.Field("完成情况", "全员完成 " + totalCount + "/" + totalCount))
+                : Arrays.asList(
+                        new NoticeVO.Field("任务名称", task.getTitle()),
+                        new NoticeVO.Field("完成人", completerName),
+                        new NoticeVO.Field("完成时间", formatTime(LocalDateTime.now())),
+                        new NoticeVO.Field("完成进度", doneCount + "/" + totalCount + " 人已完成"));
+        insertBatch(Arrays.asList(creatorId), task.getTaskId(), template, fields);
+    }
+
+    /**
+     * 到期提醒：只发给还没完成的人
+     *
+     * @param task        任务
+     * @param creatorName 委托人昵称
+     * @param memberIds   接收人
+     */
+    public void notifyRemind(TaskEntity task, String creatorName, List<Long> memberIds) {
+        if (CollectionUtils.isEmpty(memberIds)) {
+            return;
+        }
+        List<NoticeVO.Field> fields = Arrays.asList(
+                new NoticeVO.Field("任务名称", task.getTitle()),
+                new NoticeVO.Field("委托人", creatorName),
+                new NoticeVO.Field("截止时间", formatTime(task.getDeadline())),
+                new NoticeVO.Field("提示", "对方在等你了")
+        );
+        insertBatch(memberIds, task.getTaskId(), NoticeTemplateEnum.TASK_REMIND, fields);
+    }
+
+    /**
+     * 开始时间点到点通知：任务正式生效，提醒参与者可以动手了
+     */
+    public void notifyStarted(TaskEntity task, String creatorName, List<Long> memberIds) {
+        if (CollectionUtils.isEmpty(memberIds)) {
+            return;
+        }
+        List<NoticeVO.Field> fields = Arrays.asList(
+                new NoticeVO.Field("任务名称", task.getTitle()),
+                new NoticeVO.Field("委托人", creatorName),
+                new NoticeVO.Field("开始时间", formatTime(task.getStartTime())),
+                new NoticeVO.Field("提示", "现在可以开始做了")
+        );
+        insertBatch(memberIds, task.getTaskId(), NoticeTemplateEnum.TASK_START, fields);
+    }
+
+    /**
+     * 任务被改过：通知全部参与者（含已经做完的人，他们的记录也受影响）
+     */
+    public void notifyEdited(TaskEntity task, String creatorName, List<Long> memberIds) {
+        if (CollectionUtils.isEmpty(memberIds)) {
+            return;
+        }
+        List<NoticeVO.Field> fields = Arrays.asList(
+                new NoticeVO.Field("任务名称", task.getTitle()),
+                new NoticeVO.Field("委托人", creatorName),
+                new NoticeVO.Field("截止时间", formatTime(task.getDeadline())),
+                new NoticeVO.Field("提示", "你收到的任务有改动，看一眼")
+        );
+        insertBatch(memberIds, task.getTaskId(), NoticeTemplateEnum.TASK_EDITED, fields);
+    }
+
+    /**
+     * 任务被撤回：通知全部参与者（含已做完的人，他们那份也不用交了）
+     */
+    public void notifyCancelled(TaskEntity task, String creatorName, List<Long> memberIds) {
+        if (CollectionUtils.isEmpty(memberIds)) {
+            return;
+        }
+        List<NoticeVO.Field> fields = Arrays.asList(
+                new NoticeVO.Field("任务名称", task.getTitle()),
+                new NoticeVO.Field("委托人", creatorName),
+                new NoticeVO.Field("撤回时间", formatTime(LocalDateTime.now())),
+                new NoticeVO.Field("提示", "委托人撤回了这条任务，不用再做了")
+        );
+        insertBatch(memberIds, task.getTaskId(), NoticeTemplateEnum.TASK_CANCELLED, fields);
+    }
+
+    /**
+     * 有人接受了任务：通知委托人
+     * <p>
+     * 这是纯信息类通知，优先级最低。
+     *
+     * @param task       任务
+     * @param memberName 接受人昵称
+     * @param creatorId  委托人
+     */
+    public void notifyAccepted(TaskEntity task, String memberName, Long creatorId) {
+        if (creatorId == null) {
+            return;
+        }
+        List<NoticeVO.Field> fields = Arrays.asList(
+                new NoticeVO.Field("任务名称", task.getTitle()),
+                new NoticeVO.Field("受理人", memberName),
+                new NoticeVO.Field("接受时间", formatTime(LocalDateTime.now())),
+                new NoticeVO.Field("截止时间", formatTime(task.getDeadline()))
+        );
+        insertBatch(Arrays.asList(creatorId), task.getTaskId(), NoticeTemplateEnum.TASK_ACCEPTED, fields);
+    }
+
+    /**
+     * 有人拒绝了任务：通知委托人（带理由 —— 这是需要立刻处理的事，优先级最高）
+     */
+    public void notifyRejected(TaskEntity task, String memberName, Long creatorId, String reason) {
+        if (creatorId == null) {
+            return;
+        }
+        List<NoticeVO.Field> fields = Arrays.asList(
+                new NoticeVO.Field("任务名称", task.getTitle()),
+                new NoticeVO.Field("拒绝人", memberName),
+                new NoticeVO.Field("拒绝时间", formatTime(LocalDateTime.now())),
+                new NoticeVO.Field("理由", StringUtils.hasText(reason) ? reason : "没说理由")
+        );
+        insertBatch(Arrays.asList(creatorId), task.getTaskId(), NoticeTemplateEnum.TASK_REJECTED, fields);
+    }
+
+    /**
+     * 任务逾期：通知委托人
+     * <p>
+     * 每个任务只发一次 —— 调用前先用 {@link #hasNotified} 判重，
+     * 否则定时作业每分钟跑一轮，创建者会被刷屏。
+     */
+    public void notifyOverdue(TaskEntity task, int waitingCount) {
+        if (task.getCreatorId() == null) {
+            return;
+        }
+        List<NoticeVO.Field> fields = Arrays.asList(
+                new NoticeVO.Field("任务名称", task.getTitle()),
+                new NoticeVO.Field("截止时间", formatTime(task.getDeadline())),
+                new NoticeVO.Field("还没做完", waitingCount + " 人"),
+                new NoticeVO.Field("提示", "已经过了截止时间，去催一下？")
+        );
+        insertBatch(Arrays.asList(task.getCreatorId()), task.getTaskId(), NoticeTemplateEnum.TASK_OVERDUE, fields);
+    }
+
+    /**
+     * 这条任务是否已经发过某类通知
+     */
+    public boolean hasNotified(Long taskId, NoticeTemplateEnum template) {
+        if (taskId == null || template == null) {
+            return false;
+        }
+        LambdaQueryWrapper<NoticeEntity> query = new LambdaQueryWrapper<>();
+        query.eq(NoticeEntity::getTaskId, taskId)
+                .eq(NoticeEntity::getTemplateKey, template.getKey());
+        return noticeDao.selectCount(query) > 0;
+    }
+
+    private void insertBatch(List<Long> memberIds, Long taskId, NoticeTemplateEnum template, List<NoticeVO.Field> fields) {
+        List<NoticeVO.Field> limited = fields.size() > MAX_FIELDS ? fields.subList(0, MAX_FIELDS) : fields;
+        String fieldsJson = JSON.toJSONString(limited);
+        LocalDateTime now = LocalDateTime.now();
+        List<NoticeEntity> list = new ArrayList<>(memberIds.size());
+        for (Long memberId : memberIds) {
+            NoticeEntity entity = new NoticeEntity();
+            entity.setMemberId(memberId);
+            entity.setTaskId(taskId);
+            entity.setTemplateKey(template.getKey());
+            entity.setTitle(template.getTitle());
+            entity.setFieldsJson(fieldsJson);
+            entity.setReadFlag(Boolean.FALSE);
+            entity.setDeletedFlag(Boolean.FALSE);
+            entity.setCreateTime(now);
+            entity.setUpdateTime(now);
+            list.add(entity);
+        }
+        noticeDao.insertBatch(list);
+    }
+
+    private String formatTime(LocalDateTime time) {
+        return time == null ? "-" : TIME_FORMATTER.format(time);
+    }
+}
