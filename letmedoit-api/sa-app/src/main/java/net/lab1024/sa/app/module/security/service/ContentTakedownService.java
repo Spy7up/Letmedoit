@@ -6,6 +6,8 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import net.lab1024.sa.app.module.member.dao.WxMemberDao;
 import net.lab1024.sa.app.module.member.domain.entity.WxMemberEntity;
+import net.lab1024.sa.app.module.feedback.dao.AppFeedbackDao;
+import net.lab1024.sa.app.module.feedback.domain.entity.AppFeedbackEntity;
 import net.lab1024.sa.app.module.security.constant.ContentBizTypeEnum;
 import net.lab1024.sa.app.module.security.domain.entity.ContentCheckEntity;
 import net.lab1024.sa.app.module.task.dao.TaskDao;
@@ -45,6 +47,9 @@ public class ContentTakedownService {
     private WxMemberDao wxMemberDao;
 
     @Resource
+    private AppFeedbackDao appFeedbackDao;
+
+    @Resource
     private TaskNoticeService taskNoticeService;
 
     /**
@@ -58,6 +63,11 @@ public class ContentTakedownService {
         ContentBizTypeEnum bizType = ContentBizTypeEnum.getByValue(check.getBizType());
         if (bizType == ContentBizTypeEnum.AVATAR) {
             clearAvatar(check.getMemberId(), url);
+            return;
+        }
+        if (bizType == ContentBizTypeEnum.FEEDBACK_IMAGE) {
+            int feedbackCount = removeFromFeedbackImages(url);
+            log.warn("违规反馈图片已下架, url={}, 反馈{}条", url, feedbackCount);
             return;
         }
         int taskCount = removeFromTaskImages(url);
@@ -134,6 +144,36 @@ public class ContentTakedownService {
             if (task != null) {
                 taskNoticeService.notifyContentTakedown(task, "完成凭证里有违规图片，已自动移除");
             }
+            affected++;
+        }
+        return affected;
+    }
+
+    /**
+     * 反馈图片：从 t_app_feedback.images 里摘掉
+     * <p>
+     * 反馈只有后台能看，不通知用户（发通知等于告诉提交人「你发的图违规了」，
+     * 违规内容按平台要求静默处理即可）。
+     *
+     * @return 受影响记录数
+     */
+    private int removeFromFeedbackImages(String url) {
+        List<AppFeedbackEntity> feedbacks = appFeedbackDao.selectList(
+                new LambdaQueryWrapper<AppFeedbackEntity>()
+                        .like(AppFeedbackEntity::getImages, url)
+                        .eq(AppFeedbackEntity::getDeletedFlag, Boolean.FALSE));
+        int affected = 0;
+        for (AppFeedbackEntity feedback : feedbacks) {
+            List<String> images = TaskImages.parse(feedback.getImages());
+            // LIKE 会误命中前缀相同的其它图片，必须精确判一次
+            if (!images.remove(url)) {
+                continue;
+            }
+            AppFeedbackEntity update = new AppFeedbackEntity();
+            update.setFeedbackId(feedback.getFeedbackId());
+            update.setImages(images.isEmpty() ? null : TaskImages.toJson(images));
+            update.setUpdateTime(LocalDateTime.now());
+            appFeedbackDao.updateById(update);
             affected++;
         }
         return affected;

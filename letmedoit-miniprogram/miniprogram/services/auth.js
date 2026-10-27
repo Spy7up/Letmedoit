@@ -39,6 +39,22 @@ function updateProfile(dto) {
     .then(adapt.member)
 }
 
+/**
+ * 注销账号
+ * <p>
+ * 服务端会把昵称/头像/手机号/邀请码清空、open_id 换掉并逻辑删除，
+ * 帮手关系一并解除；任务与通知保留（属于其他参与者的数据）。
+ * 成功后本地登录态也要清掉，否则页面还在拿旧资料。
+ */
+function cancelAccount() {
+  return http.post('/api/member/delete').then(() => {
+    clearSession()
+    const app = getApp()
+    if (app && app.clearUser) app.clearUser()
+    return true
+  })
+}
+
 function logout() {
   // 通知服务端注销 token，失败也要清本地
   http
@@ -53,4 +69,4 @@ function logout() {
     })
 }
 
-module.exports = { login, getProfile, updateProfile, logout }
+module.exports = { login, getProfile, updateProfile, logout, cancelAccount }

@@ -28,4 +28,20 @@
         AND invite_code = #{inviteCode}
     </select>
 
+    <!-- 注销账号：匿名化 + 逻辑删除。
+         open_id 必须换掉（唯一索引），否则同一个人重新登录会被判「账号状态异常」，永远进不来。 -->
+    <update id="anonymizeAndDelete">
+        UPDATE t_wx_member
+        SET open_id = #{anonymousOpenId},
+            union_id = NULL,
+            nickname = #{anonymousName},
+            avatar = NULL,
+            phone = NULL,
+            invite_code = NULL,
+            deleted_flag = 1,
+            update_time = #{updateTime}
+        WHERE member_id = #{memberId}
+          AND deleted_flag = 0
+    </update>
+
 </mapper>

@@ -3,7 +3,7 @@ package net.lab1024.sa.app.module.dict.constant;
 /**
  * sa-app 使用的数据字典编码
  * <p>
- * 与 sa-base 的 t_dict.dict_code 一一对应，初始化脚本见 docs/sql/letmedoit_dict.sql。
+ * 与 sa-base 的 t_dict.dict_code 一一对应，初始化脚本见 docs/sql/init/letmedoit_init.sql（规则见 docs/sql/README.md）。
  * 展示文案（statusDesc / completionModeDesc / eventTypeDesc）一律从这里取，
  * 不要在 Java 里再写死中文。
  *
@@ -30,6 +30,17 @@ public class AppDictCode {
      * 任务事件类型（t_task_event.event_type）
      */
     public static final String TASK_EVENT_TYPE = "TASK_EVENT_TYPE";
+
+    /**
+     * 反馈类型（t_app_feedback.type）
+     */
+    public static final String FEEDBACK_TYPE = "FEEDBACK_TYPE";
+
+    /**
+     * 反馈处理状态（t_app_feedback.status，后台用）
+     */
+    public static final String FEEDBACK_STATUS = "FEEDBACK_STATUS";
+
 
     private AppDictCode() {
     }

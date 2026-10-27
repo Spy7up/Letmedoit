@@ -42,27 +42,40 @@
         <text class="menu-label">头像和昵称</text>
         <image class="chev" src="/images/icons/chevron-ghost.png" />
       </view>
-      <view class="menu-row" bindtap="privacy">
+      <view class="menu-row" bindtap="goFeedback">
+        <image class="ic" src="/images/icons/chat-ink.png" />
+        <text class="menu-label">问题与反馈</text>
+        <image class="chev" src="/images/icons/chevron-ghost.png" />
+      </view>
+      <view class="menu-row" bindtap="goAgreement" data-type="user">
+        <image class="ic" src="/images/icons/doc-ink.png" />
+        <text class="menu-label">用户协议</text>
+        <image class="chev" src="/images/icons/chevron-ghost.png" />
+      </view>
+      <view class="menu-row" bindtap="goAgreement" data-type="privacy">
         <image class="ic" src="/images/icons/check-ink.png" />
-        <text class="menu-label">隐私与协议</text>
+        <text class="menu-label">隐私政策</text>
         <image class="chev" src="/images/icons/chevron-ghost.png" />
       </view>
       <view class="menu-row" bindtap="about">
         <image class="ic" src="/images/icons/task-ink.png" />
         <text class="menu-label">关于让我做</text>
-        <text class="menu-extra">{{version}}</text>
+        <text class="menu-extra" wx:if="{{version}}">{{version}}</text>
         <image class="chev" src="/images/icons/chevron-ghost.png" />
       </view>
     </view>
 
     <view class="menu" style="margin-top:24rpx">
+      <view class="menu-row menu-center" bindtap="cancelAccount">
+        <text class="menu-logout menu-danger">注销账号</text>
+      </view>
       <view class="menu-row menu-center" bindtap="logout">
         <text class="menu-logout">退出登录</text>
       </view>
     </view>
 
     <view class="foot">
-      <text class="foot-line">让我做 {{version}}</text>
+      <text class="foot-line">让我做{{version ? ' ' + version : ''}}</text>
       <text class="foot-line">别人让你做的小事，说一遍就够</text>
     </view>
 

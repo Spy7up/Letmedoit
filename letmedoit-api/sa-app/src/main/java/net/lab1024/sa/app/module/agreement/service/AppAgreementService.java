@@ -57,7 +57,7 @@ public class AppAgreementService {
         AppAgreementEntity privacy = queryActive(AgreementTypeEnum.PRIVACY);
         if (user == null || privacy == null) {
             // 没配协议就等于没法让用户同意，必须拦下来，不能静默放行
-            log.error("协议未配置：用户协议={}, 隐私政策={}，请先执行 docs/sql/letmedoit_agreement.sql",
+            log.error("协议未配置：用户协议={}, 隐私政策={}，请先执行 docs/sql/init/letmedoit_init.sql",
                     user == null ? "缺失" : "正常", privacy == null ? "缺失" : "正常");
             throw new BusinessException("服务协议尚未配置，请稍后重试");
         }
@@ -162,7 +162,7 @@ public class AppAgreementService {
             return;
         }
         log.error("【用户协议】未配置完整（用户协议={}, 隐私政策={}），登录会被拒绝！"
-                        + "请执行 docs/sql/letmedoit_agreement.sql",
+                        + "请执行 docs/sql/init/letmedoit_init.sql",
                 userOk ? "正常" : "缺失", privacyOk ? "正常" : "缺失");
     }
 

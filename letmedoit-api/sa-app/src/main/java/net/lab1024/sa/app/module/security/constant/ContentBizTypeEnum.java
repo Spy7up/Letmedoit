@@ -18,7 +18,9 @@ public enum ContentBizTypeEnum {
 
     TASK_IMAGE("task_image", "任务附图"),
 
-    TASK_PROOF("task_proof", "完成凭证");
+    TASK_PROOF("task_proof", "完成凭证"),
+
+    FEEDBACK_IMAGE("feedback_image", "反馈图片");
 
     private final String value;
 
@@ -31,5 +33,24 @@ public enum ContentBizTypeEnum {
             }
         }
         return null;
+    }
+
+    /**
+     * 上传接口的 bizType → 检测业务类型
+     * <p>
+     * 上传接口的 bizType 由客户端传，认不出的一律按任务附图处理：
+     * 下架时多扫两处不会误伤，漏扫才会把违规图留在线上。
+     *
+     * @param uploadBizType 上传接口 bizType：avatar / task-image / feedback-image
+     * @return 检测业务类型
+     */
+    public static ContentBizTypeEnum ofUploadBizType(String uploadBizType) {
+        if ("avatar".equalsIgnoreCase(uploadBizType)) {
+            return AVATAR;
+        }
+        if ("feedback-image".equalsIgnoreCase(uploadBizType)) {
+            return FEEDBACK_IMAGE;
+        }
+        return TASK_IMAGE;
     }
 }

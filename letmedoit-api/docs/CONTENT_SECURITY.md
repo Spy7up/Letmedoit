@@ -177,4 +177,4 @@ sa-app/src/main/java/net/lab1024/sa/app/
 └── config/WxProperties.java                        # content-check 配置项
 ```
 
-建表脚本：`docs/sql/letmedoit_content_check.sql`（增量，幂等）。
+建表脚本：`docs/sql/init/letmedoit_init.sql`（`t_content_check`，全量里已包含；规则见 `docs/sql/README.md`）。

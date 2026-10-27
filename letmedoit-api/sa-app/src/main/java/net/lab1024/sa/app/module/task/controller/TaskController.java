@@ -101,6 +101,12 @@ public class TaskController {
         return taskService.cancel(form.getTaskId(), AppRequestUtil.getMemberId());
     }
 
+    @PostMapping("/delete")
+    @Operation(summary = "删除任务（仅已撤回的任务，委托人） @author letmedoit")
+    public ResponseDTO<String> delete(@RequestBody @Valid TaskActionForm form) {
+        return taskService.deleteTask(form.getTaskId(), AppRequestUtil.getMemberId());
+    }
+
     @PostMapping("/remind")
     @Operation(summary = "催一下 @author letmedoit")
     public ResponseDTO<TaskDetailVO> remind(@RequestBody @Valid TaskActionForm form) {

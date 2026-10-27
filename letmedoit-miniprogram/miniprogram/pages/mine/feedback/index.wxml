@@ -1,0 +1,75 @@
+<view class="page">
+  <view class="page-body">
+    <view class="fb-hero">
+      <view class="fb-icon">
+        <image class="ic-md" src="/images/icons/chat-brand.png" />
+      </view>
+      <text class="fb-title">遇到问题，或者有想法？</text>
+      <text class="fb-sub">说清楚一点我们好定位。图片最多 {{maxImages}} 张。</text>
+    </view>
+
+    <view class="field">
+      <view class="flabel">反馈类型 <text class="req">*</text></view>
+      <view class="chips chips-wrap" wx:if="{{types.length}}">
+        <view
+          class="chip {{type === item.value ? 'on' : ''}}"
+          wx:for="{{types}}"
+          wx:key="value"
+          data-value="{{item.value}}"
+          bindtap="pickType"
+        >{{item.label}}</view>
+      </view>
+      <view class="fb-type-tip" wx:elif="{{loadingTypes}}">
+        <text>类型加载中…</text>
+      </view>
+      <view class="fb-type-tip" wx:else bindtap="loadTypes">
+        <text>类型没加载出来，点这重试</text>
+      </view>
+    </view>
+
+    <view class="field">
+      <view class="flabel">反馈内容 <text class="req">*</text></view>
+      <textarea
+        class="textarea"
+        placeholder="比如：完成任务后图片没显示出来，机型是 iPhone 14"
+        placeholder-class="ph"
+        maxlength="{{maxLength}}"
+        value="{{content}}"
+        bindinput="onContent"
+      />
+      <text class="counter">{{content.length}}/{{maxLength}}</text>
+    </view>
+
+    <view class="field">
+      <view class="flabel">图片（选填，最多 {{maxImages}} 张）</view>
+      <view class="uploader">
+        <view class="thumb" wx:for="{{images}}" wx:key="*this">
+          <image class="thumb-img" src="{{item}}" mode="aspectFill" data-index="{{index}}" bindtap="previewImage" />
+          <view class="thumb-del" data-index="{{index}}" catchtap="removeImage">×</view>
+        </view>
+        <view class="thumb add" wx:if="{{images.length < maxImages && !uploading}}" bindtap="chooseImage">
+          <image class="ic-md" src="/images/icons/camera-muted.png" />
+          <text class="thumb-add-txt">添加</text>
+        </view>
+        <view class="thumb add" wx:if="{{uploading}}">
+          <text class="thumb-add-txt">上传中…</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="tip">
+      <image class="ic-sm" src="/images/icons/bell-brand.png" />
+      <text>我们会在后台看到这条反馈。涉及违规内容会优先处理。</text>
+    </view>
+
+    <view class="actionbar-space"></view>
+  </view>
+
+  <view class="actionbar">
+    <view class="btn btn-primary btn-lg {{submitting ? 'disabled' : ''}}" bindtap="submit">
+      {{submitting ? '提交中…' : '提交反馈'}}
+    </view>
+  </view>
+
+  <privacy-popup />
+</view>

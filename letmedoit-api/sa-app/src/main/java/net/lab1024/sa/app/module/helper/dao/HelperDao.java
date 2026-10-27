@@ -91,6 +91,16 @@ public interface HelperDao extends BaseMapper<HelperEntity> {
      * @param updateTime     更新时间
      * @return 受影响行数（正常为 2）
      */
+    /**
+     * 注销账号时清空该会员的全部帮手关系（双向）
+     *
+     * @param memberId   会员ID
+     * @param updateTime 更新时间
+     * @return 受影响行数
+     */
+    int logicDeleteAllByMember(@Param("memberId") Long memberId,
+                               @Param("updateTime") java.time.LocalDateTime updateTime);
+
     int removeBoth(@Param("memberId") Long memberId,
                    @Param("helperMemberId") Long helperMemberId,
                    @Param("updateTime") LocalDateTime updateTime);

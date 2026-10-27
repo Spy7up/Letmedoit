@@ -1,0 +1,81 @@
+.pp {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: flex-end;
+}
+
+.pp-mask {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(20, 16, 12, 0.45);
+}
+
+.pp-card {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 44rpx 40rpx calc(40rpx + env(safe-area-inset-bottom));
+  background: #fff;
+  border-radius: 36rpx 36rpx 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.pp-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: var(--ink, #1e1b18);
+}
+
+.pp-desc {
+  font-size: 26rpx;
+  line-height: 1.7;
+  color: var(--ink2, #5c5550);
+}
+
+.pp-link {
+  font-size: 26rpx;
+  color: var(--brand, #d64c28);
+  padding: 4rpx 0;
+}
+
+.pp-btns {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 16rpx;
+}
+
+.pp-btn {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  height: 88rpx;
+  line-height: 88rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  border-radius: 999rpx;
+  background: transparent;
+}
+
+.pp-btn::after {
+  border: none;
+}
+
+.pp-ghost {
+  color: var(--ink2, #5c5550);
+  background: #f4efeb;
+}
+
+.pp-primary {
+  color: #fff;
+  background: var(--brand, #d64c28);
+}

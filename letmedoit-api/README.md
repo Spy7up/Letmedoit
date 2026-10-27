@@ -6,6 +6,10 @@
 接口清单、业务规则、建表与启动、联调步骤见
 [`docs/让我做-接口说明与联调.md`](./docs/让我做-接口说明与联调.md)。
 
+**改数据库之前先看 [`docs/sql/README.md`](./docs/sql/README.md)**：
+新库跑 `docs/sql/init/letmedoit_init.sql`；已有库按 `docs/sql/updates/<日期>/` 顺序升级；
+任何表结构/初始数据变更都要「增量脚本 + init 同步 + 日期目录 README」一起做。
+
 ## 模块
 
 ```
@@ -25,8 +29,8 @@ letmedoit-api/
 ## 快速启动
 
 ```bash
-# 1. 建表（6 张新表 + t_wx_member.invite_code）
-#    mysql -h<host> -u<user> -p <db> < docs/sql/letmedoit_task.sql
+# 1. 全量初始化（58 张表 + 必需初始数据；新库只跑这一个）
+#    mysql -h<host> -u<user> -p <db> < docs/sql/init/letmedoit_init.sql
 
 # 2. 编译
 mvn -o -pl sa-app -am package -DskipTests

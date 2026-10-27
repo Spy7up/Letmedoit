@@ -14,7 +14,8 @@
     "pages/helpers/detail/index",
     "pages/helpers/invite/index",
     "pages/mine/index/index",
-    "pages/mine/profile/index"
+    "pages/mine/profile/index",
+    "pages/mine/feedback/index"
   ],
   "window": {
     "backgroundTextStyle": "dark",
@@ -50,6 +51,9 @@
         "selectedIconPath": "images/icons/tab-me-on.png"
       }
     ]
+  },
+  "usingComponents": {
+    "privacy-popup": "/components/privacy-popup/index"
   },
   "style": "v2",
   "sitemapLocation": "sitemap.json",

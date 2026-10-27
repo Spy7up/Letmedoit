@@ -275,3 +275,15 @@
   color: var(--brand-ink);
   padding: 4rpx 10rpx;
 }
+
+.report-row {
+  display: flex;
+  justify-content: center;
+  padding: 28rpx 0 8rpx;
+}
+
+.report-link {
+  font-size: 23rpx;
+  color: var(--ink3);
+  text-decoration: underline;
+}

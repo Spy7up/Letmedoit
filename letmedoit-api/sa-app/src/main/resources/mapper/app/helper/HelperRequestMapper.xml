@@ -60,4 +60,13 @@
           AND status = #{expectStatus}
     </update>
 
+    <!-- 注销账号：清掉该会员相关的待处理申请（收到的 + 发出的），历史记录保留 -->
+    <update id="logicDeletePendingByMember">
+        UPDATE t_helper_request
+        SET deleted_flag = 1, update_time = #{updateTime}
+        WHERE deleted_flag = 0
+          AND status = #{pendingStatus}
+          AND (from_member_id = #{memberId} OR to_member_id = #{memberId})
+    </update>
+
 </mapper>

@@ -366,6 +366,30 @@ public class TaskService {
     }
 
     /**
+     * 删除任务（只有委托人能删，且必须已经撤回）
+     * <p>
+     * 删除是逻辑删除：任务、参与者、通知一起标记，事件表保留给后台追溯。
+     *
+     * @param taskId   任务ID
+     * @param memberId 当前会员
+     */
+    public ResponseDTO<String> deleteTask(Long taskId, Long memberId) {
+        TaskEntity task = taskDao.queryById(taskId, Boolean.FALSE);
+        if (task == null) {
+            return ResponseDTO.error(UserErrorCode.DATA_NOT_EXIST, "任务不存在或已被删除");
+        }
+        if (!Objects.equals(task.getCreatorId(), memberId)) {
+            return ResponseDTO.error(UserErrorCode.NO_PERMISSION, "只有布置的人能删除");
+        }
+        if (!TaskManager.canDelete(task)) {
+            return ResponseDTO.userErrorParam("只有撤回后的任务才能删除");
+        }
+        taskManager.delete(task);
+        log.info("任务删除, taskId={}, memberId={}", taskId, memberId);
+        return ResponseDTO.ok("已删除");
+    }
+
+    /**
      * 催一下（委托人，只催还没完成的人）
      */
     public ResponseDTO<TaskDetailVO> remind(Long taskId, Long memberId) {

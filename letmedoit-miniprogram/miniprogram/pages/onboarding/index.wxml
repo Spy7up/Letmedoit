@@ -51,4 +51,6 @@
       <view class="ob-skip" bindtap="skip">先跳过，用默认的头像和名字</view>
     </view>
   </form>
+
+  <privacy-popup />
 </view>

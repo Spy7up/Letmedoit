@@ -11,7 +11,7 @@ const ENV = 'dev' // 'dev' | 'prod'
 
 const ENV_CONFIG = {
   dev: { baseUrl: 'https://40321u14v3.zicp.fun' },
-  prod: { baseUrl: 'https://api.letmedo.cn' },
+  prod: { baseUrl: 'https://letmedoit.site/gateway' },
 }
 
 const current = ENV_CONFIG[ENV]

@@ -96,7 +96,7 @@ public class TaskScheduleJob implements SmartJob {
                             && TaskScheduleJob.class.getName().equals(job.getJobClass()));
             if (!registered) {
                 log.error("【定时任务】{} 未在 t_smart_job 注册，预约生效与到期提醒不会执行！" +
-                                "请执行 docs/sql/letmedoit_dict.sql（job_class 需与类全限定名一致）",
+                                "请执行 docs/sql/init/letmedoit_init.sql（job_class 需与类全限定名一致）",
                         TaskScheduleJob.class.getName());
             }
         } catch (Exception e) {

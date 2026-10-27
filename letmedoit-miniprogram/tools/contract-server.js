@@ -282,7 +282,7 @@ function seed() {
     ], true, now - 1 * DAY + HOUR),
   ]
 
-  return { members, tasks, helpers, requests, events, notices, tokens: {}, nextId, remindAt: {} }
+  return { members, tasks, helpers, requests, events, notices, feedbacks: [], tokens: {}, nextId, remindAt: {} }
 }
 
 function slot(memberId, status, extra) {
@@ -473,6 +473,8 @@ function detailVO(task, me) {
       (task.status === TASK.SCHEDULED ||
         task.status === TASK.PENDING ||
         (task.status === TASK.IN_PROGRESS && !task.editCount)),
+    // 只有撤回后的任务能删，且只有委托人能删（和 sa-app 一致）
+    canDelete: isCreator && task.status === TASK.CANCELLED,
     events: state.events
       .filter((e) => e.taskId === task.taskId)
       .sort((a, b) => a.createTime - b.createTime)
@@ -535,6 +537,15 @@ route('GET', /^\/api\/agreement\/detail$/, ({ query }) => {
     content: '# ' + title + '\n\n## 一、说明\n\n这是用于前端自测的' + title + '正文，真实内容由后端数据库提供。',
   })
 }, false)
+
+route('GET', /^\/api\/version\/current$/, () => ok({
+  appType: 'miniapp',
+  version: '1.1.0',
+  versionLabel: 'v1.1.0',
+  releaseNote: '任务委托与提醒：多人任务、帮手、站内通知',
+  releaseTime: '2026-10-26 00:00:00',
+  forceUpdateFlag: false,
+}), false)
 
 route('POST', /^\/api\/auth\/login$/, ({ body }) => {
   if (!body || !body.code) return fail(ERR.PARAM, '缺少 code')
@@ -936,6 +947,18 @@ route('POST', /^\/api\/task\/cancel$/, ({ me, body }) => {
   return ok(detailVO(task, me))
 })
 
+route('POST', /^\/api\/task\/delete$/, ({ me, body }) => {
+  const task = state.tasks.find((t) => t.taskId === Number(body.taskId))
+  if (!task) return fail(ERR.NOT_EXIST, '任务不存在或已被删除')
+  if (task.creatorId !== Number(me)) return fail(ERR.NO_PERMISSION, '只有布置的人能删除')
+  if (task.status !== TASK.CANCELLED) return fail(ERR.PARAM, '只有撤回后的任务才能删除')
+  task.deleted = true
+  state.tasks = state.tasks.filter((t) => t.taskId !== task.taskId)
+  // 任务删除后，相关通知一起消失（避免消息中心留死链接）
+  state.notices = state.notices.filter((n) => n.taskId !== task.taskId)
+  return ok('已删除')
+})
+
 route('POST', /^\/api\/task\/remind$/, ({ me, body }) => {
   const task = state.tasks.find((t) => t.taskId === Number(body.taskId))
   if (!task) return fail(ERR.NOT_EXIST, '任务不存在')
@@ -1132,6 +1155,35 @@ route('POST', /^\/api\/notice\/read$/, ({ me, body }) => {
     if (body.allFlag || ids.indexOf(n.noticeId) >= 0) n.readFlag = true
   })
   return ok(state.notices.filter((n) => n.toMemberId === Number(me) && !n.readFlag).length)
+})
+
+/* 问题与反馈 */
+
+const FEEDBACK_TYPES = [
+  { value: 1, label: '功能建议' },
+  { value: 2, label: '使用问题' },
+  { value: 3, label: '内容违规' },
+  { value: 4, label: '其他' },
+]
+
+route('GET', /^\/api\/feedback\/type\/list$/, () => ok(FEEDBACK_TYPES))
+
+route('POST', /^\/api\/feedback\/add$/, ({ me, body }) => {
+  const type = Number(body && body.type)
+  if (!FEEDBACK_TYPES.some((t) => t.value === type)) return fail(ERR.PARAM, '反馈类型不对')
+  const content = String((body && body.content) || '').trim()
+  if (!content) return fail(ERR.PARAM, '说说遇到的情况吧')
+  const seq = state.feedbacks.length + 1
+  state.feedbacks.push({
+    feedbackId: seq,
+    memberId: Number(me),
+    type,
+    content,
+    images: (body.images || []).slice(0, 3),
+    status: 0,
+    createTime: Date.now(),
+  })
+  return ok(seq)
 })
 
 /* ---------------- 服务 ---------------- */
