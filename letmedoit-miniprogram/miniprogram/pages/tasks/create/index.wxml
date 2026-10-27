@@ -250,4 +250,6 @@
       <view class="pub-skip" bindtap="closePublished">先不用，TA 打开小程序能看到</view>
     </view>
   </view>
+
+  <privacy-popup />
 </view>

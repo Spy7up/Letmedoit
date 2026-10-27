@@ -81,6 +81,17 @@ public interface TaskParticipantDao extends BaseMapper<TaskParticipantEntity> {
                                                @Param("deletedFlag") Boolean deletedFlag);
 
     /**
+     * 逻辑删除整条任务的参与者（任务被删除时调用）
+     * <p>
+     * 不清的话，「我收到的 / 我完成的」统计还会把已经删掉的任务算进去。
+     *
+     * @param taskId     任务ID
+     * @param updateTime 更新时间
+     * @return 受影响行数
+     */
+    int logicDeleteByTaskId(@Param("taskId") Long taskId, @Param("updateTime") LocalDateTime updateTime);
+
+    /**
      * 条件更新参与状态：只有当前状态等于 expectStatus 才更新，天然幂等
      *
      * @param participantId 参与者ID

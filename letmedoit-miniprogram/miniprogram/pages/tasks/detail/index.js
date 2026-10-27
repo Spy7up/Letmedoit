@@ -156,8 +156,67 @@ Page({
     })
   },
 
-  /* ---------------- 查看某人的备注 ---------------- */
+  /**
+   * 删除任务（只有「已撤回」的才给这个按钮，权限位来自服务端 canDelete）
+   * <p>
+   * 删除不可逆，必须二次确认：第一次点是「删除」按钮，这里弹的框才是真正的确认。
+   */
+  confirmDelete() {
+    const t = this.data.task
+    const shared = t.totalCount > 1 ? '这条任务 ' + t.totalCount + ' 个人都看得到，' : ''
+    wx.showModal({
+      title: '删除这条任务？',
+      content: shared + '删除后谁也看不到了，也恢复不了。',
+      confirmText: '删除',
+      confirmColor: '#D64545',
+      success: (res) => {
+        if (res.confirm) this.doDelete()
+      },
+    })
+  },
 
+  async doDelete() {
+    if (this.data.acting) return
+    this.setData({ acting: 'delete' })
+    try {
+      await taskApi.remove(this.taskId)
+      // 列表页 onShow 会重新拉一次，这里只标记一下，避免来回传参
+      getApp().globalData.needRefresh = true
+      wx.showToast({ title: '已删除', icon: 'none' })
+      setTimeout(() => this.back(), 500)
+    } catch (e) {
+      wx.showToast({ title: e.message || '删除失败，再试一次', icon: 'none' })
+      this.setData({ acting: '' })
+      this.load(true)
+    }
+  },
+
+  /** 删除后回列表：直接从分享卡片进来的没有上一页，退回任务首页 */
+  back() {
+    if (getCurrentPages().length > 1) {
+      wx.navigateBack()
+      return
+    }
+    // 任务首页是 tabBar 页，只能用 switchTab（redirectTo 会静默失败）
+    wx.switchTab({ url: '/pages/tasks/index/index' })
+  },
+
+  /**
+   * 举报这条任务
+   * <p>
+   * UGC 类小程序必须让用户能举报违规内容（审核会查）。
+   * 直接跳到反馈页并预选「内容违规」，用户不用自己找分类。
+   */
+  goReport() {
+    const t = this.data.task
+    const title = (t && t.title) || ''
+    const content = '举报任务：' + title + '（ID ' + this.taskId + '）\n原因：'
+    wx.navigateTo({
+      url: '/pages/mine/feedback/index?type=3&content=' + encodeURIComponent(content),
+    })
+  },
+
+  /* ---------------- 查看某人的备注 ---------------- */
   /**
    * 看大图
    * dataset: index = 第几个参与者，pi = 第几张图

@@ -1,0 +1,16 @@
+<view class="pp" wx:if="{{show}}" catchtouchmove="noop">
+  <view class="pp-mask" bindtap="onDisagree"></view>
+  <view class="pp-card">
+    <text class="pp-title">隐私保护提示</text>
+    <text class="pp-desc">为了正常使用「让我做」，请阅读并同意《小程序用户隐私保护指引》。我们仅收集头像、昵称和你主动选择上传的图片，用于帮手之间互相识别、以及提交任务凭证。</text>
+    <view class="pp-link" bindtap="openContract">查看《小程序用户隐私保护指引》</view>
+    <view class="pp-btns">
+      <button class="pp-btn pp-ghost" bindtap="onDisagree">不同意</button>
+      <button
+        class="pp-btn pp-primary"
+        open-type="agreePrivacyAuthorization"
+        bindagreeprivacyauthorization="onAgree"
+      >同意</button>
+    </view>
+  </view>
+</view>

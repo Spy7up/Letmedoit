@@ -102,6 +102,9 @@ public class TaskDetailVO {
     @Schema(description = "是否可编辑")
     private Boolean canEdit;
 
+    @Schema(description = "是否可删除（只有撤回后的任务才可删）")
+    private Boolean canDelete;
+
     @Schema(description = "事件时间线")
     private List<TaskEventVO> events;
 

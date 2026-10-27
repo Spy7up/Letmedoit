@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.app.module.version.dao.AppVersionDao">
+
+    <sql id="baseColumns">
+        version_id, app_type, version, version_label, release_note, release_time,
+        min_base_lib, force_update_flag, current_flag, deleted_flag, create_time, update_time
+    </sql>
+
+    <!-- 当前对外版本：正常情况下只有一行 current_flag = 1。
+         万一手工改库弄出两行，按发布时间倒序取一条，接口结果始终确定。 -->
+    <select id="queryCurrent" resultType="net.lab1024.sa.app.module.version.domain.entity.AppVersionEntity">
+        SELECT
+        <include refid="baseColumns"/>
+        FROM t_app_version
+        WHERE app_type = #{appType}
+          AND current_flag = 1
+          AND deleted_flag = #{deletedFlag}
+        ORDER BY release_time DESC, version_id DESC
+        LIMIT 1
+    </select>
+
+</mapper>

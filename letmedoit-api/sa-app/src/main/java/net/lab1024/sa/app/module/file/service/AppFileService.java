@@ -124,9 +124,7 @@ public class AppFileService {
 
         // 内容安全：所有上传图片都要送微信异步检测（审核硬要求）。
         // 检测结论 30 分钟内通过消息推送回传，判定违规由 ContentTakedownService 自动下架。
-        contentSecurityService.checkImageAsync(
-                "avatar".equalsIgnoreCase(bizType) ? ContentBizTypeEnum.AVATAR : ContentBizTypeEnum.TASK_IMAGE,
-                vo.getFileUrl());
+        contentSecurityService.checkImageAsync(ContentBizTypeEnum.ofUploadBizType(bizType), vo.getFileUrl());
 
         return ResponseDTO.ok(vo);
     }
@@ -140,6 +138,9 @@ public class AppFileService {
         }
         if ("task-image".equalsIgnoreCase(bizType)) {
             return "task-image";
+        }
+        if ("feedback-image".equalsIgnoreCase(bizType)) {
+            return "feedback-image";
         }
         return "common";
     }

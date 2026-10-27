@@ -33,6 +33,10 @@ letmedoit/
 
 - 接口清单、业务规则、建表与启动、联调步骤见
   [`letmedoit-api/docs/让我做-接口说明与联调.md`](./letmedoit-api/docs/让我做-接口说明与联调.md)
+- **数据库脚本规则（改库前必读）**：
+  [`letmedoit-api/docs/sql/README.md`](./letmedoit-api/docs/sql/README.md)
+  —— 新库跑 `docs/sql/init/letmedoit_init.sql`，已有库按 `docs/sql/updates/<日期>/` 依次升级；
+  改动表或初始数据时，增量脚本 + init 同步 + 日期目录 README 三件一起做
 - 启动：`java -jar sa-app/target/sa-app-dev-3.0.0.jar --server.port=8081`（小程序 dev 环境指向 `http://192.168.31.79:8081`）
 
 ## 三、Git 约定

@@ -1,6 +1,7 @@
 package net.lab1024.sa.app.module.task.manager;
 
 import jakarta.annotation.Resource;
+import net.lab1024.sa.app.module.notice.dao.NoticeDao;
 import net.lab1024.sa.app.module.task.constant.CompletionModeEnum;
 import net.lab1024.sa.app.module.task.constant.ParticipantStatusEnum;
 import net.lab1024.sa.app.module.task.constant.TaskEventTypeEnum;
@@ -84,6 +85,16 @@ public class TaskManager {
         return false;
     }
 
+    /**
+     * 能否删除：只有「已撤回」的任务能删。
+     * <p>
+     * 删除是不可逆操作，只留给撤回后的清理动作；进行中/已完成的任务必须留痕，
+     * 否则参与者那边会凭空少一条记录。
+     */
+    public static boolean canDelete(TaskEntity task) {
+        return task != null && TaskStatusEnum.CANCELLED.getValue().equals(task.getStatus());
+    }
+
     @Resource
     private TaskDao taskDao;
 
@@ -92,6 +103,9 @@ public class TaskManager {
 
     @Resource
     private TaskEventDao taskEventDao;
+
+    @Resource
+    private NoticeDao noticeDao;
 
     /**
      * 创建任务 + 写参与者 + 重算状态 + 记事件
@@ -202,6 +216,26 @@ public class TaskManager {
         task.setStatus(TaskStatusEnum.CANCELLED.getValue());
         task.setUpdateTime(now);
         addEvent(task.getTaskId(), task.getCreatorId(), TaskEventTypeEnum.CANCEL, content, now);
+    }
+
+    /**
+     * 删除任务（逻辑删除，只有已撤回的任务能删）
+     * <p>
+     * 任务、参与者、通知三张表一起标记删除：
+     * 只删任务的话，统计口径会虚高，消息中心还会留下点不进去的死链接。
+     * 事件表（t_task_event）保留不动，作为后台追溯用的原始记录。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void delete(TaskEntity task) {
+        LocalDateTime now = LocalDateTime.now();
+        int rows = taskDao.logicDelete(task.getTaskId(), TaskStatusEnum.CANCELLED.getValue(), now);
+        if (rows == 0) {
+            throw new BusinessException("任务状态已变化，请刷新后重试");
+        }
+        taskParticipantDao.logicDeleteByTaskId(task.getTaskId(), now);
+        noticeDao.logicDeleteByTaskId(task.getTaskId(), now);
+        task.setDeletedFlag(Boolean.TRUE);
+        task.setUpdateTime(now);
     }
 
     /**

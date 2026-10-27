@@ -5,7 +5,7 @@
     <view class="nav-inner" style="height:{{navHeight}}px;padding-right:{{navRightPad}}">
       <view class="brand">
         <image class="brand-logo" src="/images/logo.png" mode="aspectFill" />
-        <view class="wordmark">让我做<view class="dot"></view></view>
+        <view class="wordmark">让我做</view>
       </view>
     </view>
   </view>

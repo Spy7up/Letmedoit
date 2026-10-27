@@ -154,6 +154,11 @@
         </view>
       </view>
 
+      <!-- 举报入口：UGC 小程序必须能让用户反馈违规内容 -->
+      <view class="report-row" bindtap="goReport">
+        <text class="report-link">举报这条任务</text>
+      </view>
+
       <view class="actionbar-float-space"></view>
     </block>
   </view>
@@ -174,6 +179,11 @@
       <view wx:if="{{task.canCancel}}" class="fbtn fbtn-danger" bindtap="confirmCancel">
         <image class="fbtn-icon" src="/images/icons/trash-danger.png" />
         <text>撤回</text>
+      </view>
+      <!-- 撤回之后才出现：撤回是第一步，删除是第二步，都要二次确认 -->
+      <view wx:if="{{task.canDelete}}" class="fbtn fbtn-danger" bindtap="confirmDelete">
+        <image class="fbtn-icon" src="/images/icons/trash-danger.png" />
+        <text>{{acting === 'delete' ? '删除中…' : '删除'}}</text>
       </view>
     </block>
 

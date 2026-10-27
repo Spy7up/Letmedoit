@@ -39,6 +39,15 @@ public interface NoticeDao extends BaseMapper<NoticeEntity> {
                                  Page<?> page);
 
     /**
+     * 逻辑删除某条任务的全部通知（任务被删除时调用）
+     *
+     * @param taskId     任务ID
+     * @param updateTime 更新时间
+     * @return 受影响行数
+     */
+    int logicDeleteByTaskId(@Param("taskId") Long taskId, @Param("updateTime") LocalDateTime updateTime);
+
+    /**
      * 未读数
      *
      * @param memberId 当前会员

@@ -155,6 +155,19 @@ function cancel(id) {
     .then((res) => decorate(adapt.detail(res)))
 }
 
+/**
+ * 删除任务
+ * <p>
+ * 只有「已撤回」的任务能删，且只有委托人能删 —— 两条都由后端校验，
+ * 前端只是按 canDelete 决定按钮显不显示。
+ *
+ * @param {string} id
+ * @returns {Promise<string>} 后端提示语
+ */
+function remove(id) {
+  return http.post('/api/task/delete', { taskId: Number(id) })
+}
+
 /** 催一下，后端返回最新详情 */
 function remind(id) {
   return http
@@ -226,6 +239,7 @@ module.exports = {
   reject,
   complete,
   cancel,
+  remove,
   remind,
   stats,
   summary,

@@ -14,6 +14,7 @@ import net.lab1024.sa.app.module.member.domain.entity.WxMemberEntity;
 import net.lab1024.sa.app.module.member.domain.form.WxLoginForm;
 import net.lab1024.sa.app.module.member.domain.vo.WxLoginResultVO;
 import net.lab1024.sa.app.module.member.domain.vo.WxMemberVO;
+import net.lab1024.sa.app.module.member.manager.WxAccountManager;
 import net.lab1024.sa.app.module.member.manager.WxMemberLoginManager;
 import net.lab1024.sa.app.module.security.constant.ContentBizTypeEnum;
 import net.lab1024.sa.app.module.security.service.ContentSecurityService;
@@ -71,6 +72,9 @@ public class WxAuthService {
 
     @Resource
     private WxMemberLoginManager wxMemberLoginManager;
+
+    @Resource
+    private WxAccountManager wxAccountManager;
 
     @Resource
     private LoginLogService loginLogService;
@@ -250,6 +254,25 @@ public class WxAuthService {
      * 正常走上下文（不查库）；只有在邀请码缺失时才回源一次并刷新登录态缓存，
      * 兜住两种情况：老会员从未生成过邀请码、缓存是加字段之前写入的。
      */
+    /**
+     * 注销账号
+     * <p>
+     * 数据侧（匿名化、清关系）在 WxAccountManager 的事务里做；
+     * 这里负责收尾：清登录缓存 + 让当前 token 立刻失效，避免注销后旧 token 还能用。
+     *
+     * @param memberId 当前会员ID（由 controller 从登录态取）
+     */
+    public ResponseDTO<String> cancelAccount(Long memberId) {
+        if (memberId == null) {
+            return ResponseDTO.error(UserErrorCode.LOGIN_STATE_INVALID);
+        }
+        wxAccountManager.cancel(memberId);
+        wxMemberLoginManager.clear(memberId);
+        stpAppLogic.logout();
+        log.info("会员注销账号, memberId={}", memberId);
+        return ResponseDTO.ok("账号已注销");
+    }
+
     public ResponseDTO<WxMemberVO> currentMember() {
         RequestMember current = AppRequestUtil.getMember();
         if (current == null) {

@@ -809,6 +809,94 @@ async function run() {
   check(!!minePage.data.user.inviteCode, '我的页邀请码 ' + minePage.data.user.inviteCode)
   check(typeof minePage.data.stats.helperCount === 'number', '统计帮手数 ' + minePage.data.stats.helperCount)
   check(!!minePage.data.rateText, '准时率 ' + minePage.data.rateText)
+  // 版本号由接口下发：页面里没有写死的 v1.1.0，后台改一条记录就能变
+  check(minePage.data.version === 'v1.1.0', '我的页版本来自接口：' + minePage.data.version)
+  check(!!minePage.data.versionNote, '版本说明也来自接口')
+
+  // 「我的」页两个协议入口：正文来自后端，运营改内容不用发版（以前是弹窗，读不到全文）
+  const navBeforeAgreement = calls.nav.length
+  minePage.goAgreement(evt({ type: 'privacy' }))
+  check(
+    calls.nav.slice(navBeforeAgreement).indexOf('/pages/agreement/index?type=privacy') >= 0,
+    '我的页能打开隐私政策全文'
+  )
+  const navBeforeUserDoc = calls.nav.length
+  minePage.goAgreement(evt({ type: 'user' }))
+  check(
+    calls.nav.slice(navBeforeUserDoc).indexOf('/pages/agreement/index?type=user') >= 0,
+    '我的页能打开用户协议全文'
+  )
+  const navBeforeFeedback = calls.nav.length
+  minePage.goFeedback()
+  check(
+    calls.nav.slice(navBeforeFeedback).indexOf('/pages/mine/feedback/index') >= 0,
+    '我的页能打开问题与反馈'
+  )
+
+  console.log('\n[11.1] 问题与反馈')
+  const fbPage = loadPage('pages/mine/feedback/index')
+  await fbPage.onLoad({})
+  await wait(400)
+  check(fbPage.data.types.length === 4, '反馈类型 4 项：' + fbPage.data.types.map((t) => t.label).join(' / '))
+  check(fbPage.data.type === 2, '默认选中「使用问题」')
+  fbPage.pickType(evt({ value: 3 }))
+  check(fbPage.data.type === 3, '可以切到「内容违规」')
+  fbPage.onContent(evt({}, { value: '有人发广告' }))
+  check(fbPage.data.content === '有人发广告', '内容能输入')
+  fbPage.chooseImage()
+  await wait(400)
+  check(fbPage.data.images.length === 2, '选两张图后上传成 ' + fbPage.data.images.length + ' 条公网地址')
+  check(
+    (fbPage.data.images[0] || '').indexOf('https://cdn.test/feedback-image/') === 0,
+    '反馈图走 feedback-image 目录：' + fbPage.data.images[0]
+  )
+  const navBeforeSubmit = calls.nav.length
+  await fbPage.submit()
+  await wait(1000)
+  check(calls.toast.indexOf('收到了，谢谢你') >= 0, '提交成功有提示')
+  check(calls.nav.slice(navBeforeSubmit).indexOf('back') >= 0, '提交后返回上一页')
+  const fbState = server.getState().feedbacks
+  check(
+    fbState.length === 1 && fbState[0].type === 3 && fbState[0].images.length === 2,
+    '反馈落库：类型 3 + 2 张图'
+  )
+
+  const fbEmpty = loadPage('pages/mine/feedback/index')
+  await fbEmpty.onLoad({})
+  await wait(300)
+  const toastBeforeEmpty = calls.toast.length
+  await fbEmpty.submit()
+  check(calls.toast.length > toastBeforeEmpty, '空内容提交被拦：' + calls.toast[calls.toast.length - 1])
+
+  console.log('\n[11.3] 举报入口带参进反馈页')
+  const reportPage = loadPage('pages/tasks/detail/index')
+  await reportPage.onLoad({ id: schedCancelled.id })
+  await wait(300)
+  const navBeforeReport = calls.nav.length
+  reportPage.goReport()
+  const reportUrl = calls.nav.slice(navBeforeReport)[0] || ''
+  check(reportUrl.indexOf('/pages/mine/feedback/index?type=3') === 0, '举报跳反馈页并预选内容违规：' + reportUrl)
+
+  const fbFromReport = loadPage('pages/mine/feedback/index')
+  await fbFromReport.onLoad({ type: '3', content: encodeURIComponent('举报任务：晾衣服\n原因：') })
+  await wait(400)
+  check(fbFromReport.data.type === 3, '反馈页按参数选中「内容违规」')
+  check(fbFromReport.data.content.indexOf('举报任务') === 0, '反馈内容已预填：' + fbFromReport.data.content.slice(0, 12))
+
+  console.log('\n[11.2] 撤回后才能删除')
+  const delDetail = loadPage('pages/tasks/detail/index')
+  await delDetail.onLoad({ id: schedCancelled.id })
+  await wait(400)
+  check(delDetail.data.task && delDetail.data.task.canDelete === true, '已撤回任务详情 canDelete=true')
+  check(delDetail.data.task && delDetail.data.task.canCancel === false, '已撤回任务不再显示撤回')
+  delDetail.confirmDelete()
+  check(calls.modal.indexOf('删除这条任务？') >= 0, '删除有二次确认弹窗')
+  await wait(700)
+  check(calls.nav.indexOf('/pages/tasks/index/index') >= 0, '删除后回任务首页（tab 页走 switchTab）')
+  check(
+    !server.getState().tasks.some((t) => Number(t.taskId) === Number(schedCancelled.id)),
+    '库里已经没有这条任务'
+  )
 
   // 头像昵称页：头像只能来自微信 chooseAvatar，昵称来自 type=nickname，可以反复改
   const profile = loadPage('pages/mine/profile/index')

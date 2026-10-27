@@ -72,6 +72,17 @@
         AND deleted_flag = #{deletedFlag}
     </select>
 
+    <!-- 逻辑删除：只有「已撤回」的任务能删。
+         状态条件写在 SQL 里，和撤回/完成的并发交错时只会有一边成功。 -->
+    <update id="logicDelete">
+        UPDATE t_task
+        SET deleted_flag = 1,
+            update_time = #{updateTime}
+        WHERE task_id = #{taskId}
+          AND deleted_flag = 0
+          AND status = #{expectStatus}
+    </update>
+
     <!-- 条件更新聚合状态：靠 WHERE 里的旧状态保证幂等 -->
     <update id="updateStatus">
         UPDATE t_task

@@ -62,6 +62,18 @@ public interface HelperRequestDao extends BaseMapper<HelperRequestEntity> {
      * @param updateTime   更新时间
      * @return 受影响行数
      */
+    /**
+     * 注销账号时清掉该会员的待处理申请（收到的 + 发出的）
+     *
+     * @param memberId      会员ID
+     * @param pendingStatus 待处理状态（由 service 传入，XML 不写死）
+     * @param updateTime    更新时间
+     * @return 受影响行数
+     */
+    int logicDeletePendingByMember(@Param("memberId") Long memberId,
+                                   @Param("pendingStatus") Integer pendingStatus,
+                                   @Param("updateTime") java.time.LocalDateTime updateTime);
+
     int updateStatus(@Param("requestId") Long requestId,
                      @Param("expectStatus") Integer expectStatus,
                      @Param("status") Integer status,

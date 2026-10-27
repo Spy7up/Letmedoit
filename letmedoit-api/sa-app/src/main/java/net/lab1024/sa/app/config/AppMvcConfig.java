@@ -31,6 +31,14 @@ public class AppMvcConfig implements WebMvcConfigurer {
             "/api/agreement/detail"
     };
 
+    /**
+     * 版本接口免登录：登录页也可能展示版本号，且版本号不属于用户数据。
+     * 版本由后台统一维护，见 docs/版本管理.md。
+     */
+    private static final String[] VERSION_PUBLIC_PATHS = {
+            "/api/version/current"
+    };
+
     @Resource
     private AppInterceptor appInterceptor;
 
@@ -41,6 +49,7 @@ public class AppMvcConfig implements WebMvcConfigurer {
                 .excludePathPatterns(SwaggerConfig.SWAGGER_WHITELIST)
                 .excludePathPatterns(WX_PUSH_PATH)
                 .excludePathPatterns(AGREEMENT_PUBLIC_PATHS)
+                .excludePathPatterns(VERSION_PUBLIC_PATHS)
                 .addPathPatterns("/api/**");
     }
 

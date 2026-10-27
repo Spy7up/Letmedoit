@@ -1,0 +1,40 @@
+.fb-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  padding: 36rpx 0 30rpx;
+}
+
+.fb-icon {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fb-title {
+  font-size: 34rpx;
+  font-weight: 700;
+}
+
+.fb-sub {
+  font-size: 23rpx;
+  color: var(--ink3);
+  text-align: center;
+  line-height: 1.6;
+  padding: 0 24rpx;
+}
+
+.fb-type-tip {
+  font-size: 24rpx;
+  color: var(--ink3);
+  padding: 6rpx 0 12rpx;
+}
+
+.ph {
+  color: var(--ink3);
+}

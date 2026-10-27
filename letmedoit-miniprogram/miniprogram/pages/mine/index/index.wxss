@@ -124,3 +124,7 @@
   font-size: 21rpx;
   color: var(--ink3);
 }
+
+.menu-danger {
+  color: #c0392b;
+}

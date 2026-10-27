@@ -42,4 +42,6 @@
       </button>
     </view>
   </form>
+
+  <privacy-popup />
 </view>

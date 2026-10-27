@@ -311,6 +311,8 @@ public class TaskQueryService {
         detail.setCanAddParticipant(creator && notStarted && detail.getTotalCount() < TaskManager.MAX_PARTICIPANT);
         // 预约中/待接受不限次数；进行中只给一次
         detail.setCanEdit(creator && TaskManager.canEdit(task));
+        // 删除只对「已撤回」开放：撤回是两步确认里的第一步，删掉才算真的清了
+        detail.setCanDelete(creator && TaskManager.canDelete(task));
     }
 
     private boolean isOverdue(TaskEntity task) {

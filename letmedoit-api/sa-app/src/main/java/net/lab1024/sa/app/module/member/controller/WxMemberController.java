@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import net.lab1024.sa.app.module.member.domain.form.WxProfileForm;
 import net.lab1024.sa.app.module.member.domain.vo.WxMemberVO;
 import net.lab1024.sa.app.module.member.service.WxAuthService;
+import net.lab1024.sa.app.util.AppRequestUtil;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,6 +32,12 @@ public class WxMemberController {
     @Operation(summary = "当前登录会员信息")
     public ResponseDTO<WxMemberVO> info() {
         return wxAuthService.currentMember();
+    }
+
+    @PostMapping("/delete")
+    @Operation(summary = "注销账号（匿名化并删除个人资料） @author letmedoit")
+    public ResponseDTO<String> cancelAccount() {
+        return wxAuthService.cancelAccount(AppRequestUtil.getMemberId());
     }
 
     @PostMapping("/profile")

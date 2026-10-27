@@ -846,6 +846,139 @@ async function run() {
   }
   check(/22:00/.test(lateErr), '「某一天」22:00 后开始被拒：' + lateErr)
 
+  section('[20] 撤回后才能删除')
+  await as('granny', '奶奶')
+  const delTask = await taskSvc.create({
+    title: '联调-撤回后删除',
+    description: '',
+    participantIds: [kid.id],
+    completionMode: 'all',
+    deadline: fmtAt(Date.now() + 6 * 3600 * 1000),
+    remindMinutes: 0,
+  })
+  check(delTask.canDelete === false, '未撤回的任务 canDelete=false')
+
+  // 没撤回就删：后端必须拒
+  let notCancelledErr = ''
+  try {
+    await taskSvc.remove(delTask.id)
+  } catch (e) {
+    notCancelledErr = e.message || ''
+  }
+  check(/撤回/.test(notCancelledErr), '未撤回的任务删不掉：' + notCancelledErr)
+
+  const deletedReady = await taskSvc.cancel(delTask.id)
+  check(deletedReady.status === 'cancelled', '撤回后状态 ' + deletedReady.status)
+  check(deletedReady.canDelete === true, '撤回后委托人 canDelete=true')
+
+  // 参与者不能删（哪怕已经撤回）
+  await as('kid', '小明')
+  const kidDelView = await taskSvc.detail(delTask.id)
+  check(kidDelView.canDelete === false, '参与者 canDelete=false')
+  let kidDeleteErr = ''
+  try {
+    await taskSvc.remove(delTask.id)
+  } catch (e) {
+    kidDeleteErr = e.message || ''
+  }
+  check(/布置的人/.test(kidDeleteErr), '参与者删不掉：' + kidDeleteErr)
+
+  // 委托人删掉之后：列表里没有了，详情按「已删除」返回
+  await as('granny', '奶奶')
+  await taskSvc.remove(delTask.id)
+  let goneErr = ''
+  try {
+    await taskSvc.detail(delTask.id)
+  } catch (e) {
+    goneErr = e.message || ''
+  }
+  check(/不存在|已删除/.test(goneErr), '删除后详情拿不到：' + goneErr)
+  const afterDelete = await taskSvc.list({ role: 'creator', status: 'all' })
+  check(!afterDelete.list.some((t) => t.id === delTask.id), '删除后「我发出的」列表里不再出现')
+
+  section('[21] 问题与反馈')
+  const feedbackApi = api('feedback')
+  const fbTypes = await feedbackApi.types()
+  check(
+    fbTypes.length >= 4 && fbTypes.every((t) => t.value && t.label),
+    '反馈类型：' + fbTypes.map((t) => t.label).join(' / ')
+  )
+  const feedbackId = await feedbackApi.submit({
+    type: fbTypes[0].value,
+    content: '联调反馈：完成任务后图片没显示出来（自动化用例，可忽略）',
+    images: [],
+  })
+  check(typeof feedbackId === 'number' && feedbackId > 0, '提交反馈成功 feedbackId=' + feedbackId)
+
+  let badTypeErr = ''
+  try {
+    await feedbackApi.submit({ type: 99, content: '类型非法' })
+  } catch (e) {
+    badTypeErr = e.message || ''
+  }
+  check(/类型/.test(badTypeErr), '非法反馈类型被拒：' + badTypeErr)
+
+  let emptyContentErr = ''
+  try {
+    await feedbackApi.submit({ type: fbTypes[0].value, content: '   ' })
+  } catch (e) {
+    emptyContentErr = e.message || ''
+  }
+  check(!!emptyContentErr, '空内容被拒：' + emptyContentErr)
+
+  section('[22] 版本管理')
+  const versionApi = api('version')
+  const ver = await versionApi.current({ refresh: true })
+  check(!!ver.version, '当前版本 ' + ver.version)
+  check(ver.versionLabel.indexOf('v') === 0, '展示用版本号 ' + ver.versionLabel)
+
+  // 免登录：版本号不属于用户数据，登录页也要能读
+  const keepToken = storage['lmd_app_token']
+  wx.removeStorageSync('lmd_app_token')
+  const anonRes = await new Promise((resolve) => {
+    httpRequest({
+      url: BASE + '/api/version/current',
+      method: 'GET',
+      header: {},
+      success: (res) => resolve(res),
+    })
+  })
+  if (keepToken) wx.setStorageSync('lmd_app_token', keepToken)
+  check(
+    anonRes.statusCode === 200 && anonRes.data && anonRes.data.code === 0 && !!anonRes.data.data.version,
+    '不带 token 也能读版本：' + (anonRes.data && anonRes.data.code)
+  )
+
+  section('[23] 注销账号')
+  loginCode = 'e2e_cancel_' + Date.now()
+  wx.removeStorageSync('lmd_app_token')
+  const victim = await api('auth').login(null, await ensureAgreement())
+  check(!!victim.id, '新账号登录：' + victim.nickname + ' / id=' + victim.id)
+
+  const victimToken = storage['lmd_app_token']
+  check(!!victimToken, '拿到待注销账号的 token')
+
+  await api('auth').cancelAccount()
+  check(!storage['lmd_app_token'], '注销后本地 token 已清')
+
+  // 用旧 token 直接打接口（绕开请求层的静默重登），应被判登录态失效
+  const kicked = await new Promise((resolve) => {
+    httpRequest({
+      url: BASE + '/api/member/info',
+      method: 'GET',
+      header: { 'App-Token': 'Bearer ' + victimToken },
+      success: (res) => resolve(res),
+    })
+  })
+  check(
+    kicked.data && kicked.data.code === 30007,
+    '旧 token 立即失效（code=' + (kicked.data && kicked.data.code) + '）'
+  )
+
+  // open_id 已被换掉，同一个微信再登录会是一个新账号
+  const again = await api('auth').login(null, await ensureAgreement())
+  check(again.id !== victim.id, '注销后重新登录得到新账号 ' + again.id + '（旧 ' + victim.id + '）')
+
   section('结果')
   console.log('  通过 ' + pass + ' 项，失败 ' + fails.length + ' 项')
   if (fails.length) {

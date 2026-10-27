@@ -153,6 +153,8 @@ function detail(vo) {
     canRemind: !!vo.canRemind,
     canAddParticipant: !!vo.canAddParticipant,
     canEdit: !!vo.canEdit,
+    // 删除只在「已撤回」后开放，由服务端算
+    canDelete: !!vo.canDelete,
 
     createdAt: toIso(vo.createTime),
     updatedAt: toIso(vo.updateTime),

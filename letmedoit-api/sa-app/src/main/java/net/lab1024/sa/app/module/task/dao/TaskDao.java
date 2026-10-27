@@ -58,6 +58,18 @@ public interface TaskDao extends BaseMapper<TaskEntity> {
                      @Param("updateTime") LocalDateTime updateTime);
 
     /**
+     * 逻辑删除任务（只有「已撤回」的任务才允许删，状态在 SQL 里兜住，防并发）
+     *
+     * @param taskId       任务ID
+     * @param expectStatus 期望的当前状态（已撤回）
+     * @param updateTime   更新时间
+     * @return 受影响行数，0 表示状态已变或已删除
+     */
+    int logicDelete(@Param("taskId") Long taskId,
+                    @Param("expectStatus") Integer expectStatus,
+                    @Param("updateTime") LocalDateTime updateTime);
+
+    /**
      * 清空开始时间点（委托人在编辑时关掉「开始时间点」）。
      * 用独立 SQL 是因为 updateById 会忽略 null 字段，清不掉。
      *
