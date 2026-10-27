@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.lab1024.sa.app.module.member.domain.entity.WxMemberEntity;
 import net.lab1024.sa.app.module.member.service.WxMemberService;
 import net.lab1024.sa.app.module.notice.constant.NoticeTemplateEnum;
+import net.lab1024.sa.app.module.security.service.ContentSecurityService;
 import net.lab1024.sa.app.module.task.constant.TaskStatusEnum;
 import net.lab1024.sa.app.module.task.dao.TaskDao;
 import net.lab1024.sa.app.module.task.dao.TaskParticipantDao;
@@ -76,6 +77,9 @@ public class TaskScheduleJob implements SmartJob {
     @Resource
     private SmartJobDao smartJobDao;
 
+    @Resource
+    private ContentSecurityService contentSecurityService;
+
     /**
      * 启动自检：没在 t_smart_job 注册就等于不会执行，必须让它响一声
      * <p>
@@ -111,9 +115,25 @@ public class TaskScheduleJob implements SmartJob {
         int activated = activateScheduledTasks();
         int reminded = sendDueReminders();
         int overdue = sendOverdueNotices();
-        String result = "预约生效 " + activated + " 条，到期提醒 " + reminded + " 条，逾期提醒 " + overdue + " 条";
+        // 内容检测超时兜底：图片异步结果 30 分钟内必推，超过配置时长还没回的先标记失败，
+        // 免得 t_content_check 里长期挂着一堆「审核中」看不出来问题
+        int checkTimeout = sweepContentChecks();
+        String result = "预约生效 " + activated + " 条，到期提醒 " + reminded + " 条，逾期提醒 " + overdue
+                + " 条，内容检测超时 " + checkTimeout + " 条";
         log.info("TaskScheduleJob 执行完成：{}", result);
         return result;
+    }
+
+    /**
+     * 内容检测超时兜底，失败不影响任务调度主流程
+     */
+    private int sweepContentChecks() {
+        try {
+            return contentSecurityService.sweepTimeout();
+        } catch (Exception e) {
+            log.error("内容检测超时兜底失败", e);
+            return 0;
+        }
     }
 
     /**

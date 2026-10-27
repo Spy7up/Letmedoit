@@ -25,4 +25,13 @@ public class WxLoginForm {
 
     @Schema(description = "微信头像地址（可为空）")
     private String avatar;
+
+    /**
+     * 用户勾选同意的协议版本（来自 /api/agreement/current 的 version）
+     * <p>
+     * 必填：不传就是没同意，直接拒绝登录。审核要求「必须同意后才能使用」，
+     * 只在前端做个勾选框没有任何约束力。
+     */
+    @Schema(description = "已同意的协议版本，来自 /api/agreement/current", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String agreementVersion;
 }

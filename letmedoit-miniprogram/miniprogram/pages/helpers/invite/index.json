@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "加帮手",
+  "usingComponents": {
+    "user-avatar": "/components/user-avatar/index"
+  }
+}

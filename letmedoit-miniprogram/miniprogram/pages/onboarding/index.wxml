@@ -2,7 +2,7 @@
   <view class="ob-head">
     <view class="ob-step">第一次来 · 只需一步</view>
     <view class="ob-title">让别人知道是你</view>
-    <view class="ob-sub">好友派活、你完成任务时，都会显示这个头像和名字。以后随时能改。</view>
+    <view class="ob-sub">帮手给你派活、你完成任务时，都会显示这个头像和名字。以后随时能改。</view>
   </view>
 
   <form class="ob-form" bindsubmit="onSubmit">

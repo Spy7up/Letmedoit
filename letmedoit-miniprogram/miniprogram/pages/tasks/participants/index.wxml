@@ -16,10 +16,10 @@
       <text class="pick-head-hint">{{mode === 'add' ? '只能加还没开始的任务' : '可以选多个人，各自做自己那份'}}</text>
     </view>
 
-    <view class="list" wx:if="{{friends.length}}">
+    <view class="list" wx:if="{{helpers.length}}">
       <view
         class="row"
-        wx:for="{{friends}}"
+        wx:for="{{helpers}}"
         wx:key="id"
         data-id="{{item.id}}"
         bindtap="toggle"
@@ -39,8 +39,8 @@
       <view class="empty-ring">
         <image class="ic-md" src="/images/icons/tab-users.png" />
       </view>
-      <text class="empty-title">还没有好友</text>
-      <text class="empty-sub">先去「好友」页把邀请码发给家人</text>
+      <text class="empty-title">还没有帮手</text>
+      <text class="empty-sub">先去「帮手」页把邀请码发给家人</text>
     </view>
 
     <view class="actionbar-space"></view>

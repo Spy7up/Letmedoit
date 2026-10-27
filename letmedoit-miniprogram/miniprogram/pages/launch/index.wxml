@@ -21,9 +21,22 @@
   </view>
 
   <view class="launch-foot">
-    <view class="btn btn-primary btn-lg" bindtap="onTapLogin">
+    <!-- 协议勾选：不勾不给登，后端同样会拦一道 -->
+    <view class="agree" bindtap="toggleAgree">
+      <view class="agree-box {{agreed ? 'agree-box-on' : ''}}">
+        <image wx:if="{{agreed}}" class="agree-tick" src="/images/icons/check-white.png" />
+      </view>
+      <view class="agree-text">
+        <text class="agree-plain">我已阅读并同意</text>
+        <text class="agree-link" catchtap="goAgreement" data-type="user">《用户协议》</text>
+        <text class="agree-plain">和</text>
+        <text class="agree-link" catchtap="goAgreement" data-type="privacy">《隐私政策》</text>
+      </view>
+    </view>
+
+    <view class="btn btn-primary btn-lg {{agreed ? '' : 'btn-locked'}}" bindtap="onTapLogin">
       {{loading ? '正在登录…' : '微信一键登录'}}
     </view>
-    <text class="launch-tip">{{tip || '登录后可以给好友派活，也能收到别人的委托'}}</text>
+    <text class="launch-tip">{{tip || '登录后可以给帮手派活，也能收到别人的委托'}}</text>
   </view>
 </view>

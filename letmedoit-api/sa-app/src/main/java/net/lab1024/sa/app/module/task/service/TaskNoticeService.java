@@ -170,6 +170,28 @@ public class TaskNoticeService {
     }
 
     /**
+     * 图片被内容安全判定违规并下架：通知委托人
+     * <p>
+     * 同一任务有多张违规图会收到多条，这是有意的 —— 每条对应一次实际的下架动作。
+     *
+     * @param task   任务
+     * @param reason 处理说明
+     */
+    public void notifyContentTakedown(TaskEntity task, String reason) {
+        if (task == null || task.getCreatorId() == null) {
+            return;
+        }
+        List<NoticeVO.Field> fields = Arrays.asList(
+                new NoticeVO.Field("任务名称", task.getTitle()),
+                new NoticeVO.Field("处理结果", reason),
+                new NoticeVO.Field("处理时间", formatTime(LocalDateTime.now())),
+                new NoticeVO.Field("提示", "请重新上传合规图片，或编辑任务")
+        );
+        insertBatch(Arrays.asList(task.getCreatorId()), task.getTaskId(),
+                NoticeTemplateEnum.CONTENT_TAKEDOWN, fields);
+    }
+
+    /**
      * 有人接受了任务：通知委托人
      * <p>
      * 这是纯信息类通知，优先级最低。

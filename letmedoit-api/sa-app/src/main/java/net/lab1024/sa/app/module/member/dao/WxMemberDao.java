@@ -19,7 +19,7 @@ public interface WxMemberDao extends BaseMapper<WxMemberEntity> {
     /**
      * 批量查询会员
      * <p>
-     * 任务参与者、好友列表等处统一走 IN 批量取，禁止在循环里单条查
+     * 任务参与者、帮手列表等处统一走 IN 批量取，禁止在循环里单条查
      *
      * @param memberIds 会员ID集合，调用方需保证非空
      * @return 会员列表

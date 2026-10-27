@@ -162,7 +162,7 @@ function remind(id) {
     .then((res) => decorate(adapt.detail(res)))
 }
 
-/** 我的统计：布置/参与/完成/准时率/好友数 */
+/** 我的统计：布置/参与/完成/准时率/帮手数 */
 function stats() {
   return http.get('/api/task/stats').then((res) => ({
     sentCount: res.sentCount || 0,
@@ -170,7 +170,7 @@ function stats() {
     completedCount: res.completedCount || 0,
     onTimeCount: res.onTimeCount || 0,
     onTimeRate: res.onTimeRate == null ? 0 : Number(res.onTimeRate),
-    friendCount: res.friendCount || 0,
+    helperCount: res.helperCount || 0,
   }))
 }
 

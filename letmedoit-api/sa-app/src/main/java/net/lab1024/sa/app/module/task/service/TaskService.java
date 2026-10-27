@@ -3,9 +3,10 @@ package net.lab1024.sa.app.module.task.service;
 import com.alibaba.fastjson.JSON;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import net.lab1024.sa.app.module.friend.dao.FriendDao;
+import net.lab1024.sa.app.module.helper.dao.HelperDao;
 import net.lab1024.sa.app.module.member.domain.entity.WxMemberEntity;
 import net.lab1024.sa.app.module.member.service.WxMemberService;
+import net.lab1024.sa.app.module.security.service.ContentSecurityService;
 import net.lab1024.sa.app.module.task.constant.ParticipantStatusEnum;
 import net.lab1024.sa.app.module.task.constant.TaskStatusEnum;
 import net.lab1024.sa.app.module.task.dao.TaskDao;
@@ -67,7 +68,7 @@ public class TaskService {
     private TaskParticipantDao taskParticipantDao;
 
     @Resource
-    private FriendDao friendDao;
+    private HelperDao helperDao;
 
     @Resource
     private WxMemberService wxMemberService;
@@ -80,6 +81,9 @@ public class TaskService {
 
     @Resource
     private TaskNoticeService taskNoticeService;
+
+    @Resource
+    private ContentSecurityService contentSecurityService;
 
     /* ---------------- 查询 ---------------- */
 
@@ -125,16 +129,23 @@ public class TaskService {
                 return ResponseDTO.userErrorParam(startError);
             }
         }
-        ResponseDTO<TaskDetailVO> friendCheck = checkFriends(memberId, memberIds);
-        if (friendCheck != null) {
-            return friendCheck;
+        ResponseDTO<TaskDetailVO> helperCheck = checkHelpers(memberId, memberIds);
+        if (helperCheck != null) {
+            return helperCheck;
         }
+
+        // 内容安全：标题和交代内容都是要给别人看的 UGC 文本，必须过微信文本检测
+        contentSecurityService.checkText("任务标题", addForm.getTitle());
+        contentSecurityService.checkText("交代内容", addForm.getDescription());
 
         TaskEntity task = new TaskEntity();
         task.setTitle(addForm.getTitle().trim());
         task.setDescription(addForm.getDescription());
         // 附图：服务端再洗一遍（只留公网 http(s)、最多 6 张），不信任客户端
-        task.setImages(TaskImages.toJson(addForm.getImages()));
+        List<String> images = TaskImages.normalize(addForm.getImages());
+        // 内容安全：图片必须来自走过上传检测的地址，直接塞公网 URL 绕不过去
+        contentSecurityService.assertImagesTrusted(images);
+        task.setImages(TaskImages.toJson(images));
         task.setCreatorId(memberId);
         task.setCompletionMode(addForm.getCompletionMode());
         task.setStartTime(addForm.getStartTime());
@@ -176,13 +187,21 @@ public class TaskService {
             return ResponseDTO.userErrorParam("截止时间不能早于现在");
         }
 
+        // 内容安全：改动过的文本才送检，没改就别白烧一次调用额度
+        if (StringUtils.hasText(form.getTitle())) {
+            contentSecurityService.checkText("任务标题", form.getTitle());
+        }
+        contentSecurityService.checkText("交代内容", form.getDescription());
+
         TaskEntity update = new TaskEntity();
         update.setTaskId(task.getTaskId());
         update.setTitle(StringUtils.hasText(form.getTitle()) ? form.getTitle().trim() : null);
         update.setDescription(form.getDescription());
         // 不传 images = 不改；传空数组 = 把图全删掉（toJson 会落成 "[]"，不会被 updateById 忽略）
         if (form.getImages() != null) {
-            update.setImages(TaskImages.toJson(form.getImages()));
+            List<String> images = TaskImages.normalize(form.getImages());
+            contentSecurityService.assertImagesTrusted(images);
+            update.setImages(TaskImages.toJson(images));
         }
         update.setCompletionMode(form.getCompletionMode());
         update.setDeadline(form.getDeadline());
@@ -277,6 +296,8 @@ public class TaskService {
         if (!ParticipantStatusEnum.PENDING.getValue().equals(mine.getStatus())) {
             return ResponseDTO.userErrorParam("你已经处理过了");
         }
+        // 内容安全：拒绝理由会原样展示给委托人
+        contentSecurityService.checkText("拒绝理由", form.getReason());
         taskManager.reject(task, mine, form.getReason(), "拒绝了任务：" + form.getReason());
         // 拒绝是要委托人立刻处理的事，站内优先送达
         if (!Objects.equals(memberId, task.getCreatorId())) {
@@ -305,8 +326,12 @@ public class TaskService {
         if (!ParticipantStatusEnum.ACCEPTED.getValue().equals(mine.getStatus())) {
             return ResponseDTO.userErrorParam("先接受任务才能完成");
         }
+        // 内容安全：完成备注会展示给委托人
+        contentSecurityService.checkText("完成备注", form.getRemark());
 
         String remark = StringUtils.hasText(form.getRemark()) ? form.getRemark().trim() : "";
+        // 内容安全：凭证图同样只能来自送检过的上传
+        contentSecurityService.assertImagesTrusted(form.getImages());
         String imagesJson = CollectionUtils.isEmpty(form.getImages()) ? null : JSON.toJSONString(form.getImages());
         String content = "完成了自己那份" + (StringUtils.hasText(remark) ? "：" + remark : "");
         boolean finished = taskManager.complete(task, mine, remark, imagesJson, content);
@@ -404,9 +429,9 @@ public class TaskService {
         if (existIds.size() + toAdd.size() > TaskManager.MAX_PARTICIPANT) {
             return ResponseDTO.userErrorParam("一条任务最多 " + TaskManager.MAX_PARTICIPANT + " 个人");
         }
-        ResponseDTO<TaskDetailVO> friendCheck = checkFriends(memberId, toAdd);
-        if (friendCheck != null) {
-            return friendCheck;
+        ResponseDTO<TaskDetailVO> helperCheck = checkHelpers(memberId, toAdd);
+        if (helperCheck != null) {
+            return helperCheck;
         }
 
         taskManager.addParticipants(task, toAdd);
@@ -436,19 +461,19 @@ public class TaskService {
     }
 
     /**
-     * 参与者必须都是好友（自己除外）
+     * 参与者必须都是帮手（自己除外）
      *
      * @return null 表示校验通过
      */
-    private ResponseDTO<TaskDetailVO> checkFriends(Long memberId, List<Long> memberIds) {
+    private ResponseDTO<TaskDetailVO> checkHelpers(Long memberId, List<Long> memberIds) {
         List<Long> others = memberIds.stream().filter(id -> !Objects.equals(id, memberId)).collect(Collectors.toList());
         if (others.isEmpty()) {
             return null;
         }
-        List<Long> friendIds = friendDao.queryFriendMemberIds(memberId, Boolean.FALSE);
+        List<Long> helperIds = helperDao.queryHelperMemberIds(memberId, Boolean.FALSE);
         for (Long id : others) {
-            if (!friendIds.contains(id)) {
-                return ResponseDTO.error(UserErrorCode.NO_PERMISSION, "有参与者还不是你的好友");
+            if (!helperIds.contains(id)) {
+                return ResponseDTO.error(UserErrorCode.NO_PERMISSION, "有参与者还不是你的帮手");
             }
         }
         return null;

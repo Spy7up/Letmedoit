@@ -10,9 +10,10 @@ const adapt = require('./adapt')
 /**
  * 微信登录
  * @param {{nickname?:string, avatarUrl?:string}} profile 微信资料；小程序端已不再传（getUserProfile 拿不到真实资料）
+ * @param {string} agreementVersion 用户勾选同意的协议版本，取自 /api/agreement/current
  */
-async function login(profile) {
-  const result = await silentLogin(profile)
+async function login(profile, agreementVersion) {
+  const result = await silentLogin(profile, agreementVersion)
   const member = adapt.member(result.member)
   // 仅本次调用有意义：是否首次注册，用来决定登录后要不要引导补头像昵称。
   // 不参与业务，refreshUser 用服务端数据覆盖后就没有了。

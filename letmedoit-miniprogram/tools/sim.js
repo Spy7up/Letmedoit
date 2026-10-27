@@ -4,7 +4,7 @@
  * 做法：
  *  1. 起 tools/contract-server（按 sa-app 接口契约实现的本地服务）
  *  2. 桩出 wx / App / Page，把 wx.request 接到真实 http 请求上
- *  3. 加载 app.js 与全部页面，跑「登录 → 列表 → 详情 → 接受 → 完成 → 布置 → 通知 → 好友 → 我的」
+ *  3. 加载 app.js 与全部页面，跑「登录 → 列表 → 详情 → 接受 → 完成 → 布置 → 通知 → 帮手 → 我的」
  *
  * 这样 request.js 的鉴权头、信封解析、30007 重登，以及 services/adapt.js 的字段映射
  * 全部走真实代码路径，只有数据源是内存的（本机没有 MySQL / Redis）。
@@ -221,8 +221,13 @@ async function run() {
   console.log('\n[1] 登录与鉴权头')
   const launch = loadPage('pages/launch/index')
   launch.onLoad({})
+  // 登录必须带协议版本（后端会校验），所以先拉版本、模拟用户勾选
+  await launch.loadAgreement()
+  launch.setData({ agreed: true })
   await launch.login()
   await wait(200)
+  check(!!launch.data.agreementVersion, '拿到协议版本 ' + launch.data.agreementVersion)
+  check(launch.data.agreed === true, '用户勾选同意协议')
   check(!!appInstance.globalData.user, 'launch 页完成登录', launch.data.tip)
   check(!!storage['lmd_app_token'], 'token 已落本地')
   check(lastHeaders['App-Token'].indexOf('Bearer ') === 0, '鉴权头 App-Token: Bearer ' + String(lastHeaders['App-Token']).slice(0, 14) + '…')
@@ -394,46 +399,46 @@ async function run() {
   const picker = loadPage('pages/tasks/participants/index')
   picker.onLoad({ mode: 'create', selected: '' })
   await wait(400)
-  check(picker.data.friends.length > 0, '好友可选 ' + picker.data.friends.length + ' 人')
-  picker.toggle(evt({ id: picker.data.friends[0].id }))
-  picker.toggle(evt({ id: picker.data.friends[1].id }))
+  check(picker.data.helpers.length > 0, '帮手可选 ' + picker.data.helpers.length + ' 人')
+  picker.toggle(evt({ id: picker.data.helpers[0].id }))
+  picker.toggle(evt({ id: picker.data.helpers[1].id }))
   check(picker.data.selected.length === 2, '选了两个')
 
   // 勾选态必须挂在 item 上（WXML 里不能调用 indexOf，不预计算选框就不亮）
-  const checkedIds = picker.data.friends.filter((f) => f.checked).map((f) => f.id)
+  const checkedIds = picker.data.helpers.filter((f) => f.checked).map((f) => f.id)
   check(checkedIds.length === 2, '列表里勾上了 ' + checkedIds.length + ' 个')
   check(
-    picker.data.friends.every((f) => f.checked === (picker.data.selected.indexOf(f.id) >= 0)),
+    picker.data.helpers.every((f) => f.checked === (picker.data.selected.indexOf(f.id) >= 0)),
     '每行的 checked 与 selected 一致'
   )
   // 再点一次取消 → 该行勾选态跟着消失
-  picker.toggle(evt({ id: picker.data.friends[1].id }))
+  picker.toggle(evt({ id: picker.data.helpers[1].id }))
   check(
-    picker.data.friends[1].checked === false && picker.data.selected.length === 1,
+    picker.data.helpers[1].checked === false && picker.data.selected.length === 1,
     '取消选中后勾选态同步'
   )
-  picker.toggle(evt({ id: picker.data.friends[1].id }))
+  picker.toggle(evt({ id: picker.data.helpers[1].id }))
   // 搜索过滤后勾选态不丢
-  picker.onKeyword(evt({}, { value: picker.data.friends[0].nickname }))
+  picker.onKeyword(evt({}, { value: picker.data.helpers[0].nickname }))
   check(
-    picker.data.friends.length > 0 && picker.data.friends[0].checked === true,
+    picker.data.helpers.length > 0 && picker.data.helpers[0].checked === true,
     '搜索后仍保留勾选'
   )
   picker.onKeyword(evt({}, { value: '' }))
-  check(picker.data.friends.length === picker.data.all.length, '清空搜索恢复全量')
+  check(picker.data.helpers.length === picker.data.all.length, '清空搜索恢复全量')
 
   // 带 selected 进来时要回填勾选（截图里的场景）
   const picker2 = loadPage('pages/tasks/participants/index')
   picker2.onLoad({ mode: 'create', selected: picker2 && '' })
   await wait(300)
-  const firstId = picker2.data.friends[0].id
+  const firstId = picker2.data.helpers[0].id
   const picker3 = loadPage('pages/tasks/participants/index')
   picker3.onLoad({ mode: 'create', selected: String(firstId) })
   await wait(400)
   check(picker3.data.selected.length === 1, '进页面回填已选 ' + picker3.data.selected.length + ' 个')
   check(
-    picker3.data.friends.filter((f) => f.checked).length === 1 &&
-      picker3.data.friends.filter((f) => f.checked)[0].id === firstId,
+    picker3.data.helpers.filter((f) => f.checked).length === 1 &&
+      picker3.data.helpers.filter((f) => f.checked)[0].id === firstId,
     '回填的那一行勾上了'
   )
 
@@ -753,11 +758,11 @@ async function run() {
 
   // 追加参与者：同一个接口，数组形式
   const svc = require(path.join(ROOT, 'services/task'))
-  const extra = picker.data.friends[2]
+  const extra = picker.data.helpers[2]
   const mine = await svc.list({ role: 'creator', status: 'pending' })
   const target = mine.list.find(
     (t) =>
-      t.participantCount < picker.data.friends.length &&
+      t.participantCount < picker.data.helpers.length &&
       !(t.participants || []).some((p) => p.id === extra.id)
   )
   if (target) {
@@ -783,18 +788,18 @@ async function run() {
   await messages.markAll()
   check(messages.data.unread === 0, '全部已读')
 
-  console.log('\n[10] 好友')
-  const friends = loadPage('pages/friends/index/index')
-  friends.onLoad({})
+  console.log('\n[10] 帮手')
+  const helpers = loadPage('pages/helpers/index/index')
+  helpers.onLoad({})
   await wait(500)
-  check(friends.data.friends.length > 0, '好友 ' + friends.data.friends.length + ' 个')
-  check(friends.data.requests.length > 0, '待处理请求 ' + friends.data.requests.length + ' 个')
-  check(!!friends.data.inviteCode, '邀请码 ' + friends.data.inviteCode)
-  const reqId = friends.data.requests[0].requestId
-  await friends.accept(evt({ id: reqId }))
+  check(helpers.data.helpers.length > 0, '帮手 ' + helpers.data.helpers.length + ' 个')
+  check(helpers.data.requests.length > 0, '待处理请求 ' + helpers.data.requests.length + ' 个')
+  check(!!helpers.data.inviteCode, '邀请码 ' + helpers.data.inviteCode)
+  const reqId = helpers.data.requests[0].requestId
+  await helpers.accept(evt({ id: reqId }))
   await wait(400)
-  check(friends.data.requests.length === 0, '同意后请求清空')
-  check(friends.data.friends.length > 0, '好友数更新为 ' + friends.data.friends.length)
+  check(helpers.data.requests.length === 0, '同意后请求清空')
+  check(helpers.data.helpers.length > 0, '帮手数更新为 ' + helpers.data.helpers.length)
 
   console.log('\n[11] 我的 / 头像昵称')
   const minePage = loadPage('pages/mine/index/index')
@@ -802,7 +807,7 @@ async function run() {
   await wait(500)
   check(!!minePage.data.user, '资料：' + (minePage.data.user && minePage.data.user.nickname))
   check(!!minePage.data.user.inviteCode, '我的页邀请码 ' + minePage.data.user.inviteCode)
-  check(typeof minePage.data.stats.friendCount === 'number', '统计好友数 ' + minePage.data.stats.friendCount)
+  check(typeof minePage.data.stats.helperCount === 'number', '统计帮手数 ' + minePage.data.stats.helperCount)
   check(!!minePage.data.rateText, '准时率 ' + minePage.data.rateText)
 
   // 头像昵称页：头像只能来自微信 chooseAvatar，昵称来自 type=nickname，可以反复改
@@ -916,66 +921,66 @@ async function run() {
   meMember.nickname = ''
   meMember.avatar = ''
   wx.removeStorageSync('lmd_app_token')
-  const anon = await require(path.join(ROOT, 'services/auth')).login()
+  const anon = await require(path.join(ROOT, 'services/auth')).login(null, launch.data.agreementVersion)
   check(/^用户[A-Z0-9]{4}$/.test(anon.nickname || ''), '拒绝授权时兜底昵称 ' + anon.nickname)
   check(!!anon.nickname && anon.nickname !== '微信用户', '不会把「微信用户」当昵称')
 
-  // 好友页内嵌「添加好友」：邀请码、复制、输码加人都不再跳二级页
-  const friendsPage = loadPage('pages/friends/index/index')
-  friendsPage.onLoad({})
+  // 帮手页内嵌「添加帮手」：邀请码、复制、输码加人都不再跳二级页
+  const helpersPage = loadPage('pages/helpers/index/index')
+  helpersPage.onLoad({})
   await wait(400)
-  check(friendsPage.data.inviteCode === 'K7M2QX', '好友页直接显示邀请码 ' + friendsPage.data.inviteCode)
-  // 分享路径现在指向「加好友页」，用 code 传参（不再是登录页的 invite=）
+  check(helpersPage.data.inviteCode === 'K7M2QX', '帮手页直接显示邀请码 ' + helpersPage.data.inviteCode)
+  // 分享路径现在指向「加帮手页」，用 code 传参（不再是登录页的 invite=）
   check(
-    !!friendsPage.data.sharePath && friendsPage.data.sharePath.indexOf('code=K7M2QX') > 0,
-    '分享路径就绪 ' + friendsPage.data.sharePath
+    !!helpersPage.data.sharePath && helpersPage.data.sharePath.indexOf('code=K7M2QX') > 0,
+    '分享路径就绪 ' + helpersPage.data.sharePath
   )
 
-  // 好友详情：URL 里只有名字装不下头像，进页面必须按 uid 从好友列表补回来
-  const wang = friendsPage.data.friends.filter((f) => String(f.userId) === '3')[0]
-  check(!!wang && !!wang.avatarUrl, '列表里有云头像的好友：' + (wang && wang.avatarUrl))
-  const friendDetail = loadPage('pages/friends/detail/index')
-  friendDetail.onLoad({
+  // 帮手详情：URL 里只有名字装不下头像，进页面必须按 uid 从帮手列表补回来
+  const wang = helpersPage.data.helpers.filter((f) => String(f.userId) === '3')[0]
+  check(!!wang && !!wang.avatarUrl, '列表里有云头像的帮手：' + (wang && wang.avatarUrl))
+  const helperDetail = loadPage('pages/helpers/detail/index')
+  helperDetail.onLoad({
     uid: '3',
     fid: wang ? wang.id : '',
     name: encodeURIComponent('小王'),
     count: 1,
   })
   await wait(500)
-  const fdFriend = friendDetail.data.friend || {}
+  const fdHelper = helperDetail.data.helper || {}
   check(
-    fdFriend.avatarUrl === 'https://cdn.test/avatar/wang.png',
-    '详情页补上了云头像 ' + fdFriend.avatarUrl
+    fdHelper.avatarUrl === 'https://cdn.test/avatar/wang.png',
+    '详情页补上了云头像 ' + fdHelper.avatarUrl
   )
-  check(!!fdFriend.initial && !!fdFriend.avatarStyle, '文字头像兜底仍在')
+  check(!!fdHelper.initial && !!fdHelper.avatarStyle, '文字头像兜底仍在')
 
-  // 加好友页：别人点开显示「谁邀请你」，自己点开直接回好友列表
-  const invPage = loadPage('pages/friends/invite/index')
+  // 加帮手页：别人点开显示「谁邀请你」，自己点开直接回帮手列表
+  const invPage = loadPage('pages/helpers/invite/index')
   invPage.onLoad({ code: 'M3P8LA' }) // 妈妈
   await wait(400)
   check(
     !!invPage.data.preview && invPage.data.preview.nickname === '妈妈',
-    '加好友页显示邀请人：' + (invPage.data.preview && invPage.data.preview.nickname)
+    '加帮手页显示邀请人：' + (invPage.data.preview && invPage.data.preview.nickname)
   )
-  check(invPage.data.preview && invPage.data.preview.friendFlag === true, '已是好友时 friendFlag=true')
+  check(invPage.data.preview && invPage.data.preview.helperFlag === true, '已是帮手时 helperFlag=true')
 
-  const selfInv = loadPage('pages/friends/invite/index')
+  const selfInv = loadPage('pages/helpers/invite/index')
   const navBeforeInv = calls.nav.length
   const tabBeforeInv = calls.tab.length
   selfInv.onLoad({ code: 'K7M2QX' }) // 自己的邀请码
   await wait(400)
   check(
-    calls.nav.slice(navBeforeInv).indexOf('/pages/friends/index/index') >= 0,
-    '自己点自己的卡片 → 回好友列表'
+    calls.nav.slice(navBeforeInv).indexOf('/pages/helpers/index/index') >= 0,
+    '自己点自己的卡片 → 回帮手列表'
   )
-  // 好友列表是 tabBar 页，必须 switchTab；redirectTo 会静默失败（表现为停在「加载中…」）
+  // 帮手列表是 tabBar 页，必须 switchTab；redirectTo 会静默失败（表现为停在「加载中…」）
   check(
-    calls.tab.slice(tabBeforeInv).indexOf('/pages/friends/index/index') >= 0 &&
+    calls.tab.slice(tabBeforeInv).indexOf('/pages/helpers/index/index') >= 0 &&
       selfInv.data.loading === false,
     '自己点自己的卡片用 switchTab，且不会卡在加载中'
   )
 
-  // 陌生人点开卡片 → 加好友 → 按钮切成「去看看好友」并真的跳过去
+  // 陌生人点开卡片 → 加帮手 → 按钮切成「去看看帮手」并真的跳过去
   const stInvite = server.getState()
   if (!stInvite.members.some((m) => m.memberId === 98)) {
     stInvite.members.push({
@@ -986,33 +991,33 @@ async function run() {
       gender: 0,
     })
   }
-  const invAdd = loadPage('pages/friends/invite/index')
+  const invAdd = loadPage('pages/helpers/invite/index')
   invAdd.onLoad({ code: 'PP1Q2W' })
   await wait(300)
   check(
-    !!invAdd.data.preview && invAdd.data.preview.friendFlag === false,
-    '陌生人卡片先显示「加为好友」'
+    !!invAdd.data.preview && invAdd.data.preview.helperFlag === false,
+    '陌生人卡片先显示「加为帮手」'
   )
   const tabBeforeAdd = calls.tab.length
   await invAdd.onAdd()
   await wait(200)
   check(
-    invAdd.data.joined === true && invAdd.data.preview.friendFlag === true,
-    '加完按钮切成「去看看好友」（不再绑 onAdd，避免点了没反应）'
+    invAdd.data.joined === true && invAdd.data.preview.helperFlag === true,
+    '加完按钮切成「去看看帮手」（不再绑 onAdd，避免点了没反应）'
   )
   await wait(1000)
   check(
-    calls.tab.slice(tabBeforeAdd).indexOf('/pages/friends/index/index') >= 0,
-    '加完自动进好友列表'
+    calls.tab.slice(tabBeforeAdd).indexOf('/pages/helpers/index/index') >= 0,
+    '加完自动进帮手列表'
   )
-  // 刚加的人已经进了好友关系，好友页要重新拉一次，否则后面的相对断言会算错
-  await friendsPage.load()
+  // 刚加的人已经进了帮手关系，帮手页要重新拉一次，否则后面的相对断言会算错
+  await helpersPage.load()
 
   // 分享卡片 + 从来没登录过：必须先引导登录 + 首登资料，再回到原页面（含参数）
   const savedToken = wx.getStorageSync('lmd_app_token')
   ;[
     { base: 'pages/tasks/receive/index', options: { id: '1' } },
-    { base: 'pages/friends/invite/index', options: { code: 'M3P8LA' } },
+    { base: 'pages/helpers/invite/index', options: { code: 'M3P8LA' } },
   ].forEach((probe) => {
     wx.removeStorageSync('lmd_app_token')
     const navBeforeGate = calls.nav.length
@@ -1030,27 +1035,27 @@ async function run() {
   })
   wx.setStorageSync('lmd_app_token', savedToken)
 
-  // 好友分享：指向加好友页 + 薄荷绿封面
-  const friendShare = friendsPage.onShareAppMessage()
+  // 帮手分享：指向加帮手页 + 薄荷绿封面
+  const helperShare = helpersPage.onShareAppMessage()
   check(
-    friendShare.path.indexOf('/pages/friends/invite/index?code=') === 0,
-    '好友分享去加好友页：' + friendShare.path
+    helperShare.path.indexOf('/pages/helpers/invite/index?code=') === 0,
+    '帮手分享去加帮手页：' + helperShare.path
   )
-  check(friendShare.imageUrl.indexOf('friend-cover') > 0, '好友分享用专属封面')
+  check(helperShare.imageUrl.indexOf('helper-cover') > 0, '帮手分享用专属封面')
 
-  friendsPage.copyCode()
+  helpersPage.copyCode()
   check(calls.clipboard.indexOf('K7M2QX') >= 0, '复制按钮把邀请码写进剪贴板')
 
-  friendsPage.onInputCode(evt({}, { value: 'ab' }))
-  check(friendsPage.data.inputCode === 'AB', '输入自动转大写 ' + friendsPage.data.inputCode)
+  helpersPage.onInputCode(evt({}, { value: 'ab' }))
+  check(helpersPage.data.inputCode === 'AB', '输入自动转大写 ' + helpersPage.data.inputCode)
   const toastBeforeShort = calls.toast.length
-  await friendsPage.applyCode()
+  await helpersPage.applyCode()
   check(
     calls.toast.slice(toastBeforeShort).some((t) => t.indexOf('6 位') >= 0),
     '不足 6 位被拦：' + calls.toast[calls.toast.length - 1]
   )
 
-  // 造一个还没加好友的人，用他的邀请码在好友页就地加上
+  // 造一个还没加帮手的人，用他的邀请码在帮手页就地加上
   const st = server.getState()
   let stranger = st.members.find((m) => m.memberId === 99)
   if (!stranger) {
@@ -1059,27 +1064,27 @@ async function run() {
   } else {
     stranger.inviteCode = 'ZZ9Y8X'
   }
-  const friendCountBefore = friendsPage.data.friends.length
-  friendsPage.onInputCode(evt({}, { value: 'zz9y8x' }))
-  await friendsPage.applyCode()
+  const helperCountBefore = helpersPage.data.helpers.length
+  helpersPage.onInputCode(evt({}, { value: 'zz9y8x' }))
+  await helpersPage.applyCode()
   await wait(600)
-  check(friendsPage.data.inputCode === '', '加成功后输入框清空')
+  check(helpersPage.data.inputCode === '', '加成功后输入框清空')
   check(
-    friendsPage.data.friends.length === friendCountBefore + 1,
-    '新好友原地出现在列表：' + friendCountBefore + ' → ' + friendsPage.data.friends.length
+    helpersPage.data.helpers.length === helperCountBefore + 1,
+    '新帮手原地出现在列表：' + helperCountBefore + ' → ' + helpersPage.data.helpers.length
   )
-  check(calls.nav.every((u) => u.indexOf('friends/invite') < 0), '全程没有跳二级页')
+  check(calls.nav.every((u) => u.indexOf('helpers/invite') < 0), '全程没有跳二级页')
 
   // 错误码：留在当前页提示，不清输入框以外的状态
-  friendsPage.onInputCode(evt({}, { value: 'ZZZZZZ' }))
+  helpersPage.onInputCode(evt({}, { value: 'ZZZZZZ' }))
   const toastBeforeBad = calls.toast.length
-  await friendsPage.applyCode()
+  await helpersPage.applyCode()
   await wait(300)
   check(
     calls.toast.slice(toastBeforeBad).some((t) => t.indexOf('邀请码') >= 0),
     '错误邀请码有提示：' + calls.toast[calls.toast.length - 1]
   )
-  check(friendsPage.data.applying === false, '失败后按钮恢复可点')
+  check(helpersPage.data.applying === false, '失败后按钮恢复可点')
 
 
   console.log('\n[12] 登录态失效自动重登')

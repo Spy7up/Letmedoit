@@ -2,6 +2,7 @@
   "pages": [
     "pages/tasks/index/index",
     "pages/launch/index",
+    "pages/agreement/index",
     "pages/onboarding/index",
     "pages/tasks/create/index",
     "pages/tasks/detail/index",
@@ -9,9 +10,9 @@
     "pages/tasks/complete/index",
     "pages/tasks/participants/index",
     "pages/messages/index/index",
-    "pages/friends/index/index",
-    "pages/friends/detail/index",
-    "pages/friends/invite/index",
+    "pages/helpers/index/index",
+    "pages/helpers/detail/index",
+    "pages/helpers/invite/index",
     "pages/mine/index/index",
     "pages/mine/profile/index"
   ],
@@ -37,8 +38,8 @@
         "selectedIconPath": "images/icons/tab-task-on.png"
       },
       {
-        "pagePath": "pages/friends/index/index",
-        "text": "好友",
+        "pagePath": "pages/helpers/index/index",
+        "text": "帮手",
         "iconPath": "images/icons/tab-users.png",
         "selectedIconPath": "images/icons/tab-users-on.png"
       },

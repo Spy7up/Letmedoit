@@ -24,7 +24,7 @@
 --    * 数据类语句均为固定主键插入，重复执行会因主键冲突报错，属预期行为
 --      ——重复导入初始数据没有业务意义
 --
---  不含任何测试数据：会员、任务、好友、通知、上传记录、后台测试账号全部清零。
+--  不含任何测试数据：会员、任务、帮手、通知、上传记录、后台测试账号全部清零。
 --  保留的初始数据只有 10 项，见文末「五、初始数据」。
 -- ============================================================================
 
@@ -46,13 +46,16 @@ SET SQL_MODE = 'STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION';
 --  区  | 表名                          | 用途                                   | 状态
 --  ----+-------------------------------+----------------------------------------+--------
 --  一  | t_wx_member                   | 小程序会员                             | 必需
---  一  | t_friend                      | 好友关系                               | 必需
---  一  | t_friend_request              | 好友申请                               | 必需
+--  一  | t_helper                      | 帮手关系                               | 必需
+--  一  | t_helper_request              | 帮手申请                               | 必需
 --  一  | t_task                       | 任务主表                               | 必需
 --  一  | t_task_participant            | 任务参与者                             | 必需
 --  一  | t_task_event                  | 任务事件时间线                         | 必需
 --  一  | t_task_notice                 | 站内服务通知                           | 必需
 --  一  | t_file                        | 文件上传记录                           | 必需
+--  一  | t_content_check               | 内容安全检测记录                       | 必需
+--  一  | t_app_agreement               | 用户协议与隐私政策                     | 必需
+--  一  | t_app_agreement_record        | 协议同意记录（举证用）                 | 必需
 --  一  | t_dict / t_dict_data          | 数据字典                               | 必需
 --  ----+-------------------------------+----------------------------------------+--------
 --  二  | t_smart_job                   | 定时任务配置                           | 必需
@@ -106,7 +109,7 @@ CREATE TABLE IF NOT EXISTS `t_wx_member` (
   `nickname` varchar(64) DEFAULT NULL COMMENT '昵称',
   `avatar` varchar(500) DEFAULT NULL COMMENT '头像URL',
   `phone` varchar(20) DEFAULT NULL COMMENT '手机号（微信授权获取，可信）',
-  `invite_code` varchar(8) DEFAULT NULL COMMENT '邀请码（6位，加好友用）',
+  `invite_code` varchar(8) DEFAULT NULL COMMENT '邀请码（6位，加帮手用）',
   `gender` tinyint(4) NOT NULL DEFAULT 0 COMMENT '性别 0未知 1男 2女',
   `disabled_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否禁用 0否 1是',
   `deleted_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否删除 0否 1是',
@@ -121,25 +124,25 @@ CREATE TABLE IF NOT EXISTS `t_wx_member` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='微信小程序会员';
 
 -- ----------------------------------------------------------------------------
--- t_friend —— 好友关系，双向双写各一行
+-- t_helper —— 帮手关系，双向双写各一行
 -- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `t_friend` (
-  `friend_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
+CREATE TABLE IF NOT EXISTS `t_helper` (
+  `helper_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
   `member_id` bigint(20) unsigned NOT NULL COMMENT '归属会员ID',
-  `friend_member_id` bigint(20) unsigned NOT NULL COMMENT '好友会员ID',
+  `helper_member_id` bigint(20) unsigned NOT NULL COMMENT '帮手会员ID',
   `remark` varchar(64) DEFAULT NULL COMMENT '备注名（覆盖对方昵称展示）',
   `deleted_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否删除 0否 1是',
   `create_time` datetime NOT NULL COMMENT '创建时间',
   `update_time` datetime NOT NULL COMMENT '更新时间',
-  PRIMARY KEY (`friend_id`),
-  UNIQUE KEY `uk_member_friend` (`member_id`,`friend_member_id`),
-  KEY `idx_friend_member` (`friend_member_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='好友关系';
+  PRIMARY KEY (`helper_id`),
+  UNIQUE KEY `uk_member_helper` (`member_id`,`helper_member_id`),
+  KEY `idx_helper_member` (`helper_member_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='帮手关系';
 
 -- ----------------------------------------------------------------------------
--- t_friend_request —— 好友申请
+-- t_helper_request —— 帮手申请
 -- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `t_friend_request` (
+CREATE TABLE IF NOT EXISTS `t_helper_request` (
   `request_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
   `from_member_id` bigint(20) unsigned NOT NULL COMMENT '发起人会员ID',
   `to_member_id` bigint(20) unsigned NOT NULL COMMENT '接收人会员ID',
@@ -151,7 +154,65 @@ CREATE TABLE IF NOT EXISTS `t_friend_request` (
   PRIMARY KEY (`request_id`),
   KEY `idx_to_status` (`to_member_id`,`status`),
   KEY `idx_from_status` (`from_member_id`,`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='好友申请';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='帮手申请';
+
+-- ----------------------------------------------------------------------------
+-- t_content_check —— 内容安全检测记录（审核要求：UGC 文本与图片必须过微信检测）
+--   biz_type=text 走同步 msgSecCheck；图片走异步 mediaCheckAsync，
+--   trace_id 用于和消息推送回来的结果配对
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `t_content_check` (
+  `check_id`      bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `trace_id`      varchar(64)      DEFAULT NULL COMMENT '微信异步检测任务ID（文本检测为空）',
+  `member_id`     bigint(20) unsigned DEFAULT NULL COMMENT '提交检测的会员ID',
+  `biz_type`      varchar(32)      NOT NULL DEFAULT 'text' COMMENT '来源 text/avatar/task_image/task_proof',
+  `scene`         tinyint(4)       NOT NULL DEFAULT 4 COMMENT '场景 1资料 2评论 3论坛 4社交日志',
+  `media_url`     varchar(512)     DEFAULT NULL COMMENT '被检测的图片地址',
+  `media_type`    tinyint(4)       NOT NULL DEFAULT 2 COMMENT '1音频 2图片 0文本',
+  `content_brief` varchar(128)     DEFAULT NULL COMMENT '文本摘要，排查用',
+  `status`        tinyint(4)       NOT NULL DEFAULT 0 COMMENT '0审核中 1通过 2违规 3检测失败',
+  `label`         int(11)          DEFAULT NULL COMMENT '命中标签 100正常 20001时政 20002色情 20006违法 21000其他',
+  `suggest`       varchar(16)      DEFAULT NULL COMMENT '微信建议 pass/review/risky',
+  `err_msg`       varchar(255)     DEFAULT NULL COMMENT '错误信息',
+  `create_time`   datetime         NOT NULL COMMENT '创建时间',
+  `update_time`   datetime         NOT NULL COMMENT '更新时间',
+  PRIMARY KEY (`check_id`),
+  KEY `idx_trace` (`trace_id`),
+  KEY `idx_status_time` (`status`, `create_time`),
+  KEY `idx_member` (`member_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='内容安全检测记录';
+
+-- ----------------------------------------------------------------------------
+-- t_app_agreement / t_app_agreement_record —— 用户协议与隐私政策（后台可配置）
+--   正文存表里，运营者改完立刻生效；同意动作留痕用于举证
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `t_app_agreement` (
+  `agreement_id`   bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `type`           varchar(20)  NOT NULL COMMENT '类型 user用户协议 privacy隐私政策',
+  `title`          varchar(100) NOT NULL COMMENT '标题',
+  `version`        varchar(20)  NOT NULL COMMENT '版本号，如 1.0.0',
+  `content`        mediumtext   NOT NULL COMMENT '正文，纯文本（# 开头为标题行）',
+  `effective_time` datetime     NOT NULL COMMENT '生效时间',
+  `enabled_flag`   tinyint(1)   NOT NULL DEFAULT 1 COMMENT '是否启用 1启用 0停用',
+  `create_time`    datetime     NOT NULL COMMENT '创建时间',
+  `update_time`    datetime     NOT NULL COMMENT '更新时间',
+  PRIMARY KEY (`agreement_id`),
+  KEY `idx_type_enabled` (`type`, `enabled_flag`, `effective_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户协议与隐私政策';
+
+CREATE TABLE IF NOT EXISTS `t_app_agreement_record` (
+  `record_id`      bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `member_id`      bigint(20) unsigned NOT NULL COMMENT '会员ID',
+  `agreement_type` varchar(20)  NOT NULL COMMENT '协议类型 user/privacy',
+  `version`        varchar(20)  NOT NULL COMMENT '同意的版本号',
+  `agree_time`     datetime     NOT NULL COMMENT '同意时间',
+  `ip`             varchar(64)  DEFAULT NULL COMMENT '同意时的IP',
+  `user_agent`     varchar(255) DEFAULT NULL COMMENT '同意时的客户端标识',
+  `create_time`    datetime     NOT NULL COMMENT '创建时间',
+  PRIMARY KEY (`record_id`),
+  UNIQUE KEY `uk_member_type_version` (`member_id`, `agreement_type`, `version`),
+  KEY `idx_member` (`member_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户协议同意记录';
 
 -- ----------------------------------------------------------------------------
 -- t_task —— 任务主表（含附图、编辑次数、到点通知开关）
@@ -1081,8 +1142,8 @@ CREATE TABLE IF NOT EXISTS `t_oa_invoice` (
 -- 10. t_change_log    框架自带版本日志，后台首页展示
 --
 --  已清空的测试数据：
---    t_wx_member / t_friend / t_friend_request / t_task / t_task_participant
---    t_task_event / t_task_notice / t_file / t_wx_order / t_wx_pay_notify_log
+--    t_wx_member / t_helper / t_helper_request / t_task / t_task_participant
+--    t_task_event / t_task_notice / t_file / t_content_check / t_app_agreement_record / t_wx_order / t_wx_pay_notify_log
 --    t_employee(除 admin) / t_role / t_role_employee / t_role_menu / t_role_data_scope
 --    t_notice(12) / t_message(4) / t_help_doc(2) / t_oa_*(2+2+2) / t_goods(6) / t_category(12)
 --    t_smart_job(示例任务 2 个) / t_dict(GOODS_PLACE 商品地区)
@@ -1400,7 +1461,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- 2) 核心表必须存在（返回 10 行）
 -- SELECT table_name FROM information_schema.tables
 --  WHERE table_schema = DATABASE()
---    AND table_name IN ('t_wx_member','t_friend','t_friend_request','t_task',
+--    AND table_name IN ('t_wx_member','t_helper','t_helper_request','t_content_check','t_task',
 --                       't_task_participant','t_task_event','t_task_notice',
 --                       't_file','t_dict','t_dict_data');
 --
@@ -1408,7 +1469,8 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- SELECT 't_wx_member' t, COUNT(*) c FROM t_wx_member
 -- UNION ALL SELECT 't_task', COUNT(*) FROM t_task
 -- UNION ALL SELECT 't_task_participant', COUNT(*) FROM t_task_participant
--- UNION ALL SELECT 't_friend', COUNT(*) FROM t_friend;
+-- UNION ALL SELECT 't_helper', COUNT(*) FROM t_helper;
+-- UNION ALL SELECT 't_content_check', COUNT(*) FROM t_content_check;
 --
 -- 4) 定时任务必须注册（否则到点生效与到期提醒全部静默失效）
 -- SELECT job_name, trigger_value, enabled_flag FROM t_smart_job

@@ -54,6 +54,7 @@
 | --- | --- | --- |
 | `WX_MINIAPP_APPID` | 小程序 AppID | 空 |
 | `WX_MINIAPP_SECRET` | 小程序 AppSecret | 空 |
+| `WX_PUSH_TOKEN` | 微信消息推送 Token，**必须与微信后台「开发管理 - 消息推送」填的 Token 完全一致**；为空会导致内容安全异步结果收不到（日志会打印「push-token 为空」） | 空 |
 
 > `WX_MINIAPP_APPID` 为空时，`mock: false` 的登录链路会失败——本地纯接口联调可临时把对应 profile 的 `wx.miniapp.mock` 改为 `true`。
 

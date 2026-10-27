@@ -228,10 +228,10 @@ function seed() {
     t.status = aggregate(t, Date.now())
   })
 
-  const friends = []
+  const helpers = []
   ;[2, 3, 4, 5, 7].forEach((fid) => {
-    friends.push({ friendId: nextId(), memberId: ME, friendMemberId: fid, remark: fid === 2 ? '老妈' : '', createTime: now - 30 * DAY })
-    friends.push({ friendId: nextId(), memberId: fid, friendMemberId: ME, remark: '', createTime: now - 30 * DAY })
+    helpers.push({ helperId: nextId(), memberId: ME, helperMemberId: fid, remark: fid === 2 ? '老妈' : '', createTime: now - 30 * DAY })
+    helpers.push({ helperId: nextId(), memberId: fid, helperMemberId: ME, remark: '', createTime: now - 30 * DAY })
   })
 
   const requests = [
@@ -282,7 +282,7 @@ function seed() {
     ], true, now - 1 * DAY + HOUR),
   ]
 
-  return { members, tasks, friends, requests, events, notices, tokens: {}, nextId, remindAt: {} }
+  return { members, tasks, helpers, requests, events, notices, tokens: {}, nextId, remindAt: {} }
 }
 
 function slot(memberId, status, extra) {
@@ -362,8 +362,8 @@ function userVO(id) {
   return { memberId: m.memberId, nickname: m.nickname, avatar: m.avatar || '' }
 }
 
-function isFriend(a, b) {
-  return state.friends.some((f) => f.memberId === Number(a) && f.friendMemberId === Number(b))
+function isHelper(a, b) {
+  return state.helpers.some((f) => f.memberId === Number(a) && f.helperMemberId === Number(b))
 }
 
 function participantOf(task, memberId) {
@@ -512,8 +512,35 @@ function route(method, pattern, handler, needLogin) {
 
 /* 认证与资料 */
 
+/**
+ * 协议版本：真实后端按库里最新生效版本拼成 u{用户协议}|p{隐私政策}
+ * 这里固定一份，用来验证「登录必须带版本」这条约束
+ */
+const AGREEMENT_VERSION = 'u1.0.0|p1.0.0'
+
+route('GET', /^\/api\/agreement\/current$/, () => ok({
+  userAgreement: { type: 'user', title: '用户协议', version: '1.0.0', effectiveDate: '2026-10-26' },
+  privacyPolicy: { type: 'privacy', title: '隐私政策', version: '1.0.0', effectiveDate: '2026-10-26' },
+  version: AGREEMENT_VERSION,
+}), false)
+
+route('GET', /^\/api\/agreement\/detail$/, ({ query }) => {
+  const type = query && query.type === 'privacy' ? 'privacy' : 'user'
+  const title = type === 'user' ? '用户协议' : '隐私政策'
+  return ok({
+    type,
+    title,
+    version: '1.0.0',
+    effectiveTime: '2026-10-26T00:00:00',
+    content: '# ' + title + '\n\n## 一、说明\n\n这是用于前端自测的' + title + '正文，真实内容由后端数据库提供。',
+  })
+}, false)
+
 route('POST', /^\/api\/auth\/login$/, ({ body }) => {
   if (!body || !body.code) return fail(ERR.PARAM, '缺少 code')
+  // 与真实后端一致：没同意协议不给登
+  if (!body.agreementVersion) return fail(ERR.PARAM, '请先阅读并同意《用户协议》和《隐私政策》')
+  if (body.agreementVersion !== AGREEMENT_VERSION) return fail(ERR.PARAM, '协议已更新，请重新阅读并同意')
   const me = memberOf(1)
   const token = 'tok_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
   // isConcurrent=false：新 token 顶掉旧 token
@@ -659,7 +686,7 @@ route('GET', /^\/api\/task\/stats$/, ({ me }) => {
     completedCount: done.length,
     onTimeCount: onTime.length,
     onTimeRate: done.length ? Number((onTime.length / done.length).toFixed(4)) : 1,
-    friendCount: state.friends.filter((f) => f.memberId === Number(me)).length,
+    helperCount: state.helpers.filter((f) => f.memberId === Number(me)).length,
   })
 })
 
@@ -672,8 +699,8 @@ route('POST', /^\/api\/task\/add$/, ({ me, body }) => {
   if (!ids.length) return fail(ERR.PARAM, '至少选一个人')
   if (ids.length > 10) return fail(ERR.PARAM, '一条任务最多 10 个人')
   if (new Set(ids).size !== ids.length) return fail(ERR.PARAM, '同一个人只能选一次')
-  const strangers = ids.filter((id) => id !== Number(me) && !isFriend(me, id))
-  if (strangers.length) return fail(ERR.NO_PERMISSION, '有参与者还不是你的好友')
+  const strangers = ids.filter((id) => id !== Number(me) && !isHelper(me, id))
+  if (strangers.length) return fail(ERR.NO_PERMISSION, '有参与者还不是你的帮手')
 
   const deadline = parseTime(body.deadline)
   if (!deadline) return fail(ERR.PARAM, '请选择截止时间')
@@ -772,8 +799,8 @@ route('POST', /^\/api\/task\/participant\/add$/, ({ me, body }) => {
 
   const ids = (body.memberIds || []).map(Number)
   if (!ids.length) return fail(ERR.PARAM, '请选择要加的人')
-  const strangers = ids.filter((id) => id !== Number(me) && !isFriend(me, id))
-  if (strangers.length) return fail(ERR.NO_PERMISSION, 'TA 还不是你的好友')
+  const strangers = ids.filter((id) => id !== Number(me) && !isHelper(me, id))
+  if (strangers.length) return fail(ERR.NO_PERMISSION, 'TA 还不是你的帮手')
   const dup = ids.filter((id) => isParticipant(task, id))
   if (dup.length) return fail(ERR.REPEAT, 'TA 已经在任务里了')
   if (task.participants.length + ids.length > 10) return fail(ERR.PARAM, '一条任务最多 10 个人')
@@ -936,25 +963,25 @@ route('POST', /^\/api\/task\/remind$/, ({ me, body }) => {
   return ok(detailVO(task, me))
 })
 
-/* 好友 */
+/* 帮手 */
 
-route('GET', /^\/api\/friend\/list$/, ({ me, query }) => {
-  let rows = state.friends
+route('GET', /^\/api\/helper\/list$/, ({ me, query }) => {
+  let rows = state.helpers
     .filter((f) => f.memberId === Number(me))
     .map((f) => {
-      const u = userVO(f.friendMemberId)
+      const u = userVO(f.helperMemberId)
       const active = state.tasks.filter(
         (t) =>
           (t.status === TASK.SCHEDULED || t.status === TASK.PENDING || t.status === TASK.IN_PROGRESS) &&
-          ((t.creatorId === Number(me) && isParticipant(t, f.friendMemberId)) ||
-            (t.creatorId === f.friendMemberId && isParticipant(t, me)))
+          ((t.creatorId === Number(me) && isParticipant(t, f.helperMemberId)) ||
+            (t.creatorId === f.helperMemberId && isParticipant(t, me)))
       ).length
       const related = state.tasks
-        .filter((t) => t.creatorId === f.friendMemberId || isParticipant(t, f.friendMemberId))
+        .filter((t) => t.creatorId === f.helperMemberId || isParticipant(t, f.helperMemberId))
         .sort((a, b) => b.updateTime - a.updateTime)[0]
       return {
-        friendId: f.friendId,
-        memberId: f.friendMemberId,
+        helperId: f.helperId,
+        memberId: f.helperMemberId,
         nickname: u.nickname,
         avatar: u.avatar,
         remark: f.remark || '',
@@ -972,7 +999,7 @@ route('GET', /^\/api\/friend\/list$/, ({ me, query }) => {
   return ok(rows)
 })
 
-route('GET', /^\/api\/friend\/request\/list$/, ({ me }) => {
+route('GET', /^\/api\/helper\/request\/list$/, ({ me }) => {
   return ok(
     state.requests
       .filter((r) => r.toMemberId === Number(me) && r.status === 0)
@@ -985,11 +1012,11 @@ route('GET', /^\/api\/friend\/request\/list$/, ({ me }) => {
   )
 })
 
-route('POST', /^\/api\/friend\/request\/add$/, ({ me, body }) => {
+route('POST', /^\/api\/helper\/request\/add$/, ({ me, body }) => {
   const to = Number(body.toMemberId)
-  if (!to) return fail(ERR.PARAM, '请选择好友')
-  if (to === Number(me)) return fail(ERR.PARAM, '不能加自己为好友')
-  if (isFriend(me, to)) return fail(ERR.REPEAT, '你们已经是好友了')
+  if (!to) return fail(ERR.PARAM, '请选择帮手')
+  if (to === Number(me)) return fail(ERR.PARAM, '不能加自己为帮手')
+  if (isHelper(me, to)) return fail(ERR.REPEAT, '你们已经是彼此的帮手了')
   const dup = state.requests.find(
     (r) => r.fromMemberId === Number(me) && r.toMemberId === to && r.status === 0
   )
@@ -1007,20 +1034,20 @@ function handleRequest(me, requestId, status) {
   if (r.toMemberId !== Number(me)) return fail(ERR.NO_PERMISSION, '只能处理发给自己的请求')
   if (r.status !== 0) return fail(ERR.REPEAT, '该请求已处理')
   r.status = status
-  if (status === 1) addFriend(me, r.fromMemberId)
-  return ok(status === 1 ? '已加为好友' : '已拒绝')
+  if (status === 1) addHelper(me, r.fromMemberId)
+  return ok(status === 1 ? '已加为帮手' : '已拒绝')
 }
 
-route('POST', /^\/api\/friend\/request\/accept$/, ({ me, body }) => handleRequest(me, body.requestId, 1))
-route('POST', /^\/api\/friend\/request\/reject$/, ({ me, body }) => handleRequest(me, body.requestId, 2))
+route('POST', /^\/api\/helper\/request\/accept$/, ({ me, body }) => handleRequest(me, body.requestId, 1))
+route('POST', /^\/api\/helper\/request\/reject$/, ({ me, body }) => handleRequest(me, body.requestId, 2))
 
-route('GET', /^\/api\/friend\/invite$/, ({ me }) => {
+route('GET', /^\/api\/helper\/invite$/, ({ me }) => {
   const m = memberOf(me)
-  return ok({ inviteCode: m.inviteCode, sharePath: '/pages/friends/invite/index?code=' + m.inviteCode })
+  return ok({ inviteCode: m.inviteCode, sharePath: '/pages/helpers/invite/index?code=' + m.inviteCode })
 })
 
 // 邀请码预览：点开分享卡片的人看「谁邀请我」
-route('GET', /^\/api\/friend\/invite\/([\w]+)$/, ({ me, params }) => {
+route('GET', /^\/api\/helper\/invite\/([\w]+)$/, ({ me, params }) => {
   const code = String(params[0] || '').toUpperCase()
   const target = state.members.find((m) => m.inviteCode === code)
   if (!target) return fail(ERR.NOT_EXIST, '邀请码不存在或已失效')
@@ -1031,39 +1058,39 @@ route('GET', /^\/api\/friend\/invite\/([\w]+)$/, ({ me, params }) => {
     nickname: target.nickname,
     avatar: target.avatar,
     selfFlag: self,
-    friendFlag: !self && isFriend(me, target.memberId),
+    helperFlag: !self && isHelper(me, target.memberId),
   })
 })
 
-route('POST', /^\/api\/friend\/invite\/accept$/, ({ me, body }) => {
+route('POST', /^\/api\/helper\/invite\/accept$/, ({ me, body }) => {
   const code = String(body.inviteCode || '').trim().toUpperCase()
   const target = state.members.find((m) => m.inviteCode === code)
   if (!target) return fail(ERR.NOT_EXIST, '邀请码不存在')
-  if (target.memberId === Number(me)) return fail(ERR.PARAM, '不能加自己为好友')
-  if (isFriend(me, target.memberId)) return fail(ERR.PARAM, '你们已经是好友了')
-  addFriend(me, target.memberId)
+  if (target.memberId === Number(me)) return fail(ERR.PARAM, '不能加自己为帮手')
+  if (isHelper(me, target.memberId)) return fail(ERR.PARAM, '你们已经是彼此的帮手了')
+  addHelper(me, target.memberId)
   return ok('已加上 ' + target.nickname)
 })
 
-route('POST', /^\/api\/friend\/remove$/, ({ me, body }) => {
-  const row = state.friends.find((f) => f.friendId === Number(body.friendId))
-  if (!row) return fail(ERR.NOT_EXIST, '好友关系不存在')
-  if (row.memberId !== Number(me)) return fail(ERR.NO_PERMISSION, '只能解除自己的好友')
-  const other = row.friendMemberId
-  state.friends = state.friends.filter(
+route('POST', /^\/api\/helper\/remove$/, ({ me, body }) => {
+  const row = state.helpers.find((f) => f.helperId === Number(body.helperId))
+  if (!row) return fail(ERR.NOT_EXIST, '帮手关系不存在')
+  if (row.memberId !== Number(me)) return fail(ERR.NO_PERMISSION, '只能解除自己的帮手')
+  const other = row.helperMemberId
+  state.helpers = state.helpers.filter(
     (f) =>
       !(
-        (f.memberId === Number(me) && f.friendMemberId === other) ||
-        (f.memberId === other && f.friendMemberId === Number(me))
+        (f.memberId === Number(me) && f.helperMemberId === other) ||
+        (f.memberId === other && f.helperMemberId === Number(me))
       )
   )
   return ok('已解除')
 })
 
-function addFriend(a, b) {
-  if (isFriend(a, b)) return
-  state.friends.push({ friendId: state.nextId(), memberId: Number(a), friendMemberId: Number(b), remark: '', createTime: Date.now() })
-  state.friends.push({ friendId: state.nextId(), memberId: Number(b), friendMemberId: Number(a), remark: '', createTime: Date.now() })
+function addHelper(a, b) {
+  if (isHelper(a, b)) return
+  state.helpers.push({ helperId: state.nextId(), memberId: Number(a), helperMemberId: Number(b), remark: '', createTime: Date.now() })
+  state.helpers.push({ helperId: state.nextId(), memberId: Number(b), helperMemberId: Number(a), remark: '', createTime: Date.now() })
 }
 
 /* 服务通知 */

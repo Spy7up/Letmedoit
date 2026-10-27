@@ -15,8 +15,8 @@ Component({
         iconOn: '/images/icons/tab-task-on.png',
       },
       {
-        pagePath: '/pages/friends/index/index',
-        text: '好友',
+        pagePath: '/pages/helpers/index/index',
+        text: '帮手',
         icon: '/images/icons/tab-users.png',
         iconOn: '/images/icons/tab-users-on.png',
       },

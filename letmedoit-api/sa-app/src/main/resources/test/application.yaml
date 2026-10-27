@@ -24,3 +24,16 @@ wx:
     appid: ${WX_MINIAPP_APPID:}
     secret: ${WX_MINIAPP_SECRET:}
     timeout: 5000
+    # 内容安全（小程序审核硬要求）：UGC 文本与图片必须过微信检测
+    content-check:
+      enabled: true
+      # 微信接口抖动时是否放行：true 不阻塞用户发任务（默认），false 一律拒绝
+      fail-open: true
+      # 与微信后台「开发管理 - 消息推送」里填的 Token 一致；图片异步结果靠它验签
+      push-token: ${WX_PUSH_TOKEN:}
+      # 场景值：1 资料；2 评论；3 论坛；4 社交日志
+      text-scene: 4
+      image-scene: 4
+      avatar-scene: 1
+      # 异步结果 30 分钟内必推，超过这个时长按超时处理
+      pending-timeout-minutes: 35

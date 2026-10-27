@@ -1,5 +1,5 @@
 const taskApi = require('../../../services/task')
-const friendApi = require('../../../services/friend')
+const helperApi = require('../../../services/helper')
 const fileApi = require('../../../services/file')
 const { REMIND_OPTIONS } = require('../../../constants/task')
 const { presentUser } = require('../../../utils/present')
@@ -158,7 +158,7 @@ Page({
       startText: humanOf(d.date, '08:00'),
       today: d.date,
     })
-    // 从好友页「派活」进来时，预选这个人
+    // 从帮手页「派活」进来时，预选这个人
     if (options && options.assigneeIds) {
       this.prefill(options.assigneeIds.split(','))
     }
@@ -224,8 +224,8 @@ Page({
 
   async prefill(ids) {
     try {
-      const friends = await friendApi.list()
-      const picked = friends
+      const helpers = await helperApi.list()
+      const picked = helpers
         .filter((f) => ids.indexOf(f.userId) >= 0)
         .map((f) => ({ id: f.userId, nickname: f.remark || f.nickname, avatarUrl: f.avatarUrl }))
       if (picked.length) this.applyParticipants(picked)
@@ -571,7 +571,7 @@ Page({
     wx.redirectTo({ url: '/pages/tasks/detail/index?id=' + p.taskId })
   },
 
-  /** 转发给好友：卡片落到「接收页」，对方只需要接受或拒绝 */
+  /** 转发给帮手：卡片落到「接收页」，对方只需要接受或拒绝 */
   onShareAppMessage() {
     const p = this.data.published
     if (!p) {
