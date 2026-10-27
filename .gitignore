@@ -33,3 +33,4 @@ build/
 .env.local
 *.log
 logs/
+/xhs-launch
