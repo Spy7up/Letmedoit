@@ -1,31 +1,36 @@
 -- ============================================================================
---  「让我做」(letmedoit) 正式版数据库初始化脚本
+--  「让我做」(letmedoit) 生产环境数据库初始化脚本
 -- ----------------------------------------------------------------------------
---  适用：sa-app 小程序接口服务（含同库的 sa-admin 后台）
---  表数量：54 张（业务 11 张 + 底座 4 张 + 后台 26 张 + 暂未使用 13 张）
+--  适用：全新建库（生产/预发），只跑一次。已有库升级请用 docs/sql/updates/。
+--  基线日期：2026-10-27     表数量：58 张
+--    = 业务 15 张（会员/帮手/任务/通知/文件/内容安全/协议/字典/反馈/版本）
+--    + 框架底座 30 张（sa-base 4 + sa-admin 26）
+--    + 暂未使用 13 张（订单、商品、OA、帮助文档等，框架自带）
 --
---  兼容性：
---    结构从开发库（MariaDB 11.8）导出后做了标准化处理，可在 MySQL 5.7 / 8.0
---    与 MariaDB 10.6+ 直接执行。所有表排序规则统一 utf8mb4_general_ci——
---    开发库里 uca1400_ai_ci / unicode_ci / general_ci 三种混用，跨表 JOIN 会报
---    Illegal mix of collations，且 uca1400 在 MySQL 上根本不存在。
+--  内容：
+--    一、sa-app 小程序运行必需（缺一张，接口就报错）
+--    二、sa-base 通用能力（字典 / 定时任务 / 配置 / 登录日志）
+--    三、后台管理 sa-admin（本期未做业务页，但表要齐，否则后台起不来）
+--    四、暂时用不到（框架自带，保留以免以后补表）
+--    五、初始数据（只保留运行必需的，无任何联调测试数据）
+--    六、上线自检
 --
---  执行方式（生产环境，全新建库，只跑一次）：
---      mysql -h <host> -u <user> -p < letmedoit_init.sql
---  或者客户端里整段执行。
---
---  与旧脚本的关系：本文件取代 docs/sql 下这些增量脚本，新建库不要再用它们：
---      wx_miniapp.sql / letmedoit_task.sql / letmedoit_task_images.sql
---      letmedoit_task_edit_count.sql / letmedoit_task_start_notify.sql / letmedoit_dict.sql
---  它们的最终形态已全部合并进本文件。
+--  执行方式：
+--      mysql -h <host> -u <user> -p <库名> < letmedoit_init.sql
+--    或在客户端里整段执行。
 --
 --  幂等性：
 --    * 建表统一 CREATE TABLE IF NOT EXISTS，重复执行不报错
---    * 数据类语句均为固定主键插入，重复执行会因主键冲突报错，属预期行为
---      ——重复导入初始数据没有业务意义
+--    * 数据类语句用固定主键插入，重复执行会主键冲突（属预期，重复导数据无意义）
 --
---  不含任何测试数据：会员、任务、帮手、通知、上传记录、后台测试账号全部清零。
---  保留的初始数据只有 10 项，见文末「五、初始数据」。
+--  不含任何测试数据：会员、任务、帮手、通知、上传记录、内容检测、协议同意记录、
+--  反馈全部为空；后台只留 1 个 admin 账号（上线后立刻改密）。
+--
+--  ⚠️ 改表或改初始数据后，必须同时：
+--     1) 在 docs/sql/updates/<日期>/ 下写增量脚本（给已有库）
+--     2) 同步更新本文件（给新库）
+--     3) 更新 docs/sql/README.md 里的「变更记录」表
+--  规则详见 docs/sql/README.md
 -- ============================================================================
 
 SET NAMES utf8mb4;
@@ -56,6 +61,8 @@ SET SQL_MODE = 'STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION';
 --  一  | t_content_check               | 内容安全检测记录                       | 必需
 --  一  | t_app_agreement               | 用户协议与隐私政策                     | 必需
 --  一  | t_app_agreement_record        | 协议同意记录（举证用）                 | 必需
+--  一  | t_app_feedback                | 问题与反馈（小程序提交）               | 必需
+--  一  | t_app_version                 | 小程序版本（当前对外版本）             | 必需
 --  一  | t_dict / t_dict_data          | 数据字典                               | 必需
 --  ----+-------------------------------+----------------------------------------+--------
 --  二  | t_smart_job                   | 定时任务配置                           | 必需
@@ -213,6 +220,55 @@ CREATE TABLE IF NOT EXISTS `t_app_agreement_record` (
   UNIQUE KEY `uk_member_type_version` (`member_id`, `agreement_type`, `version`),
   KEY `idx_member` (`member_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户协议同意记录';
+
+-- ----------------------------------------------------------------------------
+-- t_app_feedback —— 问题与反馈（小程序提交，后台处理）
+--   类型 1功能建议 2使用问题 3内容违规 4其他；图片一列 JSON，最多 3 张
+--   状态 0待处理 1处理中 2已解决 3已关闭，reply_* 三个字段给后台客服台
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `t_app_feedback` (
+  `feedback_id`     bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '反馈ID',
+  `member_id`       bigint(20) unsigned NOT NULL COMMENT '提交人会员ID',
+  `type`            tinyint(4)   NOT NULL COMMENT '反馈类型 1功能建议 2使用问题 3内容违规 4其他',
+  `content`         varchar(500) NOT NULL COMMENT '反馈内容',
+  `images`          varchar(2000) DEFAULT NULL COMMENT '反馈图片，JSON 数组字符串，最多 3 张公网 URL',
+  `contact`         varchar(64)  DEFAULT NULL COMMENT '联系方式（选填，方便后台回复）',
+  `status`          tinyint(4)   NOT NULL DEFAULT 0 COMMENT '处理状态 0待处理 1处理中 2已解决 3已关闭',
+  `reply_content`   varchar(500) DEFAULT NULL COMMENT '处理回复',
+  `reply_member_id` bigint(20) unsigned DEFAULT NULL COMMENT '处理人（后台员工ID）',
+  `reply_time`      datetime     DEFAULT NULL COMMENT '回复时间',
+  `deleted_flag`    tinyint(1)   NOT NULL DEFAULT 0 COMMENT '是否删除 0否 1是',
+  `create_time`     datetime     NOT NULL COMMENT '创建时间',
+  `update_time`     datetime     NOT NULL COMMENT '更新时间',
+  PRIMARY KEY (`feedback_id`),
+  KEY `idx_status_time` (`status`, `create_time`),
+  KEY `idx_type_time` (`type`, `create_time`),
+  KEY `idx_member_time` (`member_id`, `create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='问题与反馈';
+
+-- ----------------------------------------------------------------------------
+-- t_app_version —— 小程序版本
+--   小程序里所有版本文案（「我的」页脚、关于弹窗）都读 /api/version/current，
+--   代码里不再写死版本号。同端只应有一行 current_flag = 1。
+--   force_update_flag / min_base_lib 是「强制更新」预留列，本期前端不读。
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `t_app_version` (
+  `version_id`        bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `app_type`          varchar(16)  NOT NULL DEFAULT 'miniapp' COMMENT '端类型 miniapp 微信小程序（预留 h5/app）',
+  `version`           varchar(32)  NOT NULL COMMENT '版本号，如 1.1.0（不带 v）',
+  `version_label`     varchar(32)  DEFAULT NULL COMMENT '展示用版本号，如 v1.1.0；空则服务端拼 v+version',
+  `release_note`      varchar(500) DEFAULT NULL COMMENT '更新说明，「关于」弹窗展示',
+  `release_time`      datetime     DEFAULT NULL COMMENT '发布时间',
+  `min_base_lib`      varchar(16)  DEFAULT NULL COMMENT '最低基础库版本（预留）',
+  `force_update_flag` tinyint(1)   NOT NULL DEFAULT 0 COMMENT '是否强制更新 0否 1是（预留，前端暂不读）',
+  `current_flag`      tinyint(1)   NOT NULL DEFAULT 0 COMMENT '是否当前对外版本 0否 1是，同一端只应有一行为1',
+  `deleted_flag`      tinyint(1)   NOT NULL DEFAULT 0 COMMENT '是否删除 0否 1是',
+  `create_time`       datetime     NOT NULL COMMENT '创建时间',
+  `update_time`       datetime     NOT NULL COMMENT '更新时间',
+  PRIMARY KEY (`version_id`),
+  UNIQUE KEY `uk_type_version` (`app_type`, `version`),
+  KEY `idx_type_current` (`app_type`, `current_flag`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='小程序版本';
 
 -- ----------------------------------------------------------------------------
 -- t_task —— 任务主表（含附图、编辑次数、到点通知开关）
@@ -1128,22 +1184,25 @@ CREATE TABLE IF NOT EXISTS `t_oa_invoice` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC COMMENT='OA发票信息\n';
 
 -- ============================================================================
---  五、初始数据（去测试数据后仅保留这些）
+--  五、初始数据（去测试数据后仅保留这些，共 12 项）
 -- ----------------------------------------------------------------------------
 --  1. t_config        后台安全策略 2 条（密码复杂度、上传大小 30MB、登录失败锁定）
 --  2. t_department    1 个「总部」，后台员工必须有归属部门
 --  3. t_position      1 个「普通员工」
 --  4. t_employee      1 个 admin 账号（超级管理员，密码沿用 SmartAdmin 默认 123456）
 --  5. t_menu          139 条后台菜单，后台导航的唯一来源，不可删
---  6. t_dict          4 本业务字典（任务状态 / 参与人状态 / 完成条件 / 事件类型）
---  7. t_dict_data     22 条字典项，小程序状态文案从这张表读
+--  6. t_dict          6 本业务字典（任务 4 本 + 反馈 2 本）
+--  7. t_dict_data     30 条字典项，小程序状态/类型文案从这张表读
 --  8. t_smart_job     1 个定时作业（任务到点生效与到期提醒，每分钟）
 --  9. t_notice_type   2 条公告类型（后台公告功能下拉用）
 -- 10. t_change_log    框架自带版本日志，后台首页展示
+-- 11. t_app_agreement 用户协议 + 隐私政策正文（缺了登录会被拒）
+-- 12. t_app_version   当前小程序版本（v1.0.0，与线上小程序包版本一致）
 --
 --  已清空的测试数据：
 --    t_wx_member / t_helper / t_helper_request / t_task / t_task_participant
---    t_task_event / t_task_notice / t_file / t_content_check / t_app_agreement_record / t_wx_order / t_wx_pay_notify_log
+--    t_task_event / t_task_notice / t_file / t_content_check / t_app_agreement_record / t_app_feedback
+--    t_wx_order / t_wx_pay_notify_log
 --    t_employee(除 admin) / t_role / t_role_employee / t_role_menu / t_role_data_scope
 --    t_notice(12) / t_message(4) / t_help_doc(2) / t_oa_*(2+2+2) / t_goods(6) / t_category(12)
 --    t_smart_job(示例任务 2 个) / t_dict(GOODS_PLACE 商品地区)
@@ -1408,6 +1467,313 @@ INSERT INTO `t_dict_data` (`dict_data_id`, `dict_id`, `data_value`, `data_label`
 (30, 7, '9', '自动跳过', '#A69C93', '任一人完成后其余人自动跳过', 10, 0, '2026-01-01 00:00:00', '2026-01-01 00:00:00');
 
 -- ----------------------------------------------------------------------------
+--  8. 反馈字典（FEEDBACK_TYPE / FEEDBACK_STATUS）
+-- ----------------------------------------------------------------------------
+INSERT INTO `t_dict` (`dict_id`, `dict_name`, `dict_code`, `remark`, `disabled_flag`, `create_time`, `update_time`) VALUES
+(8, '反馈类型', 'FEEDBACK_TYPE', 't_app_feedback.type：后台分派用（内容违规要当天处理）', 0, '2026-01-01 00:00:00', '2026-01-01 00:00:00');
+INSERT INTO `t_dict` (`dict_id`, `dict_name`, `dict_code`, `remark`, `disabled_flag`, `create_time`, `update_time`) VALUES
+(9, '反馈状态', 'FEEDBACK_STATUS', 't_app_feedback.status：后台处理流转', 0, '2026-01-01 00:00:00', '2026-01-01 00:00:00');
+
+INSERT INTO `t_dict_data` (`dict_data_id`, `dict_id`, `data_value`, `data_label`, `data_style`, `remark`, `sort_order`, `disabled_flag`, `create_time`, `update_time`) VALUES
+(31, 8, '1', '功能建议', '#6B5BD2', '想要什么功能', 40, 0, '2026-01-01 00:00:00', '2026-01-01 00:00:00');
+INSERT INTO `t_dict_data` (`dict_data_id`, `dict_id`, `data_value`, `data_label`, `data_style`, `remark`, `sort_order`, `disabled_flag`, `create_time`, `update_time`) VALUES
+(32, 8, '2', '使用问题', '#E08A00', '用不了、报错、显示不对', 30, 0, '2026-01-01 00:00:00', '2026-01-01 00:00:00');
+INSERT INTO `t_dict_data` (`dict_data_id`, `dict_id`, `data_value`, `data_label`, `data_style`, `remark`, `sort_order`, `disabled_flag`, `create_time`, `update_time`) VALUES
+(33, 8, '3', '内容违规', '#D64545', '看到不合适的内容，优先处理', 20, 0, '2026-01-01 00:00:00', '2026-01-01 00:00:00');
+INSERT INTO `t_dict_data` (`dict_data_id`, `dict_id`, `data_value`, `data_label`, `data_style`, `remark`, `sort_order`, `disabled_flag`, `create_time`, `update_time`) VALUES
+(34, 8, '4', '其他', '#8C8279', '', 10, 0, '2026-01-01 00:00:00', '2026-01-01 00:00:00');
+INSERT INTO `t_dict_data` (`dict_data_id`, `dict_id`, `data_value`, `data_label`, `data_style`, `remark`, `sort_order`, `disabled_flag`, `create_time`, `update_time`) VALUES
+(35, 9, '0', '待处理', '#E08A00', '', 40, 0, '2026-01-01 00:00:00', '2026-01-01 00:00:00');
+INSERT INTO `t_dict_data` (`dict_data_id`, `dict_id`, `data_value`, `data_label`, `data_style`, `remark`, `sort_order`, `disabled_flag`, `create_time`, `update_time`) VALUES
+(36, 9, '1', '处理中', '#D64C28', '', 30, 0, '2026-01-01 00:00:00', '2026-01-01 00:00:00');
+INSERT INTO `t_dict_data` (`dict_data_id`, `dict_id`, `data_value`, `data_label`, `data_style`, `remark`, `sort_order`, `disabled_flag`, `create_time`, `update_time`) VALUES
+(37, 9, '2', '已解决', '#17A67C', '', 20, 0, '2026-01-01 00:00:00', '2026-01-01 00:00:00');
+INSERT INTO `t_dict_data` (`dict_data_id`, `dict_id`, `data_value`, `data_label`, `data_style`, `remark`, `sort_order`, `disabled_flag`, `create_time`, `update_time`) VALUES
+(38, 9, '3', '已关闭', '#8C8279', '重复反馈 / 无需处理', 10, 0, '2026-01-01 00:00:00', '2026-01-01 00:00:00');
+
+-- ----------------------------------------------------------------------------
+--  9. 小程序版本（当前对外版本）
+--    「我的」页脚、关于弹窗、后续强制更新的版本依据。发版时插新行并把旧行
+--    current_flag 置 0，不要直接改这一行的版本号（历史版本要留档）。
+-- ----------------------------------------------------------------------------
+INSERT INTO `t_app_version` (`version_id`, `app_type`, `version`, `version_label`, `release_note`,
+  `release_time`, `min_base_lib`, `force_update_flag`, `current_flag`, `deleted_flag`, `create_time`, `update_time`) VALUES
+(1, 'miniapp', '1.0.0', 'v1.0.0', '首个版本：任务委托与提醒（多人任务、帮手、站内通知）', '2026-10-27 00:00:00',
+ NULL, 0, 1, 0, '2026-01-01 00:00:00', '2026-01-01 00:00:00');
+
+-- ----------------------------------------------------------------------------
+--  10. 协议正文（登录必须同意，缺了会拒绝登录）
+--   正文里的「运营者」统一写「本小程序作者」，不写真实姓名/邮箱；
+--   联系方式引导到小程序内的「我的 → 问题与反馈」。
+--   改正文属于措辞调整时不升版本，用户不会被要求重新同意（见 docs/AGREEMENT.md）。
+-- ----------------------------------------------------------------------------
+INSERT INTO `t_app_agreement` (`agreement_id`, `type`, `title`, `version`, `content`, `effective_time`, `enabled_flag`, `create_time`, `update_time`) VALUES
+(1, 'user', '用户协议', '1.0.0', '# 用户协议
+
+版本：1.0.0
+生效日期：2026 年 10 月 26 日
+运营者：本小程序作者
+联系方式：小程序内「我的 → 问题与反馈」
+
+欢迎使用「让我做」小程序（以下简称"本服务"）。本协议是你与本小程序作者（以下简称"我们"）之间就使用本服务所订立的协议。
+
+**请你在使用本服务前完整阅读本协议，特别是以加粗形式提示的免除或限制责任条款。你勾选"我已阅读并同意"或实际使用本服务，即表示你已充分理解并接受本协议全部内容。如你不同意本协议任何条款，请停止注册和使用。**
+
+## 一、协议的接受与变更
+
+1.1 本协议内容包括协议正文及我们已发布或将来可能发布的各类规则、公告、操作指引。上述内容均为本协议不可分割的组成部分，与本协议具有同等法律效力。
+
+1.2 我们有权根据法律法规变化、业务调整或技术升级需要修订本协议。协议修订后，我们会在本服务内以显著方式提示，并更新版本号与生效日期。**修订内容生效后，你继续使用本服务的，视为你已接受修订后的协议；如你不同意，应停止使用并可申请注销账号。**
+
+1.3 若你为未满 18 周岁的未成年人，请在法定监护人陪同下阅读本协议，并在取得监护人同意后使用本服务。
+
+## 二、服务说明
+
+2.1 本服务是一款面向家庭成员及熟人之间的小工具，用于**发布日常小事委托、提醒对方按时完成、确认完成结果**。你可以向已建立"帮手"关系的其他用户布置任务，也可以接受他人布置给你的任务。
+
+2.2 本服务仅提供信息记录与提醒的技术能力，**不参与用户之间任何实际事务的履行**。任务的完成质量、交付结果由用户自行负责，我们不承担担保责任。
+
+2.3 本服务免费提供。如未来推出收费功能，我们会事前明确告知收费项目、标准与方式，由你自主选择是否使用。
+
+2.4 我们有权根据运营需要调整、中断或终止部分或全部服务，但应尽可能提前通知，并保障你已产生数据的合理导出需求。
+
+## 三、账号注册与使用
+
+3.1 你通过微信授权登录本服务，我们将依据你的微信 OpenID 为你创建账号。你应保证使用本人合法持有的微信账号登录，不得转让、出借、出租账号。
+
+3.2 你应妥善保管微信账号及设备，因你自身原因导致账号被他人使用所产生的后果，由你自行承担。发现账号异常时，请及时通过本协议末尾的联系方式通知我们。
+
+3.3 你授权我们获取的微信昵称、头像仅用于在本服务内展示与识别。你可以随时在"我的"页面修改昵称与头像。
+
+3.4 你可以在"我的"页面选择是否授权提供手机号。**手机号为可选信息**，不授权不影响本服务的核心功能使用。
+
+## 四、用户行为规范
+
+4.1 你在使用本服务时，应遵守《中华人民共和国网络安全法》《中华人民共和国个人信息保护法》《网络信息内容生态治理规定》等法律法规，不得制作、复制、发布、传播含有下列内容的信息：
+
+（一）反对宪法确定的基本原则的；
+（二）危害国家安全，泄露国家秘密，颠覆国家政权，破坏国家统一的；
+（三）损害国家荣誉和利益的；
+（四）歪曲、丑化、亵渎、否定英雄烈士事迹和精神的；
+（五）宣扬恐怖主义、极端主义的；
+（六）煽动民族仇恨、民族歧视，破坏民族团结的；
+（七）破坏国家宗教政策，宣扬邪教和封建迷信的；
+（八）散布谣言，扰乱经济秩序和社会秩序，破坏社会稳定的；
+（九）散布淫秽、色情、赌博、暴力、凶杀、恐怖或者教唆犯罪的；
+（十）侮辱、诽谤他人，侵害他人名誉权、隐私权、肖像权、知识产权等合法权益的；
+（十一）含有法律、行政法规禁止的其他内容的。
+
+4.2 你不得利用本服务从事下列行为：发布广告或垃圾信息；批量注册账号；使用外挂、脚本等非官方手段访问本服务；干扰本服务正常运行；以任何方式绕过本服务的内容安全检测机制。
+
+4.3 **所有你提交的文本内容与上传的图片，均会经过微信内容安全接口检测。** 检测未通过的，我们有权拒绝发布、予以删除，并可视情节采取警告、限制功能、暂停或终止服务的处理措施。
+
+4.4 因你违反本协议或相关法律法规导致我们或第三方遭受损失的，你应承担相应赔偿责任。
+
+## 五、内容安全与审核
+
+5.1 本服务的文本（任务标题、交代内容、完成备注、拒绝理由、帮手申请附言、昵称）与图片（头像、任务附图、完成凭证）均接入微信内容安全检测能力。
+
+5.2 文本内容在提交时同步检测，未通过则不予发布。图片采用异步检测机制，检测结果回传后如判定违规，我们会自动移除该图片并通过站内通知告知发布者。
+
+5.3 我们有权对违规内容进行删除、屏蔽，并保留相关记录依法向主管部门报告。
+
+## 六、知识产权
+
+6.1 本服务的软件著作权、界面设计、商标、文字与图形素材等知识产权归我们或相应权利人所有。
+
+6.2 你通过本服务发布的任务内容、上传的图片，其知识产权归你或原权利人所有。你授予我们一项**非独占、免费、仅为实现本服务功能所必需**的许可，用于在本服务范围内存储、展示、传输上述内容。
+
+6.3 你保证对发布的内容拥有合法权利，不侵犯任何第三方权益。因你的内容引发权利纠纷的，由你自行承担全部责任。
+
+## 七、个人信息保护
+
+7.1 我们重视你的个人信息保护。关于我们如何收集、使用、存储、共享你的个人信息，以及你享有的权利，请详见《隐私政策》。
+
+7.2 **《隐私政策》是本协议不可分割的组成部分，与本协议具有同等法律效力。**
+
+## 八、服务的变更、中断与终止
+
+8.1 因系统维护、升级或不可抗力（包括但不限于自然灾害、网络故障、黑客攻击、政府行为）导致服务中断的，我们将尽力及时恢复，但在法律允许范围内不承担赔偿责任。
+
+8.2 你有权随时停止使用本服务，并可申请注销账号。注销后，除法律法规要求留存的记录外，我们将删除或匿名化你的个人信息。
+
+8.3 你出现下列情形之一的，我们有权终止向你提供服务：违反法律法规或本协议；账号被用于违法活动；经核实存在严重侵害他人权益的行为。
+
+## 九、免责声明与责任限制
+
+9.1 **本服务仅提供任务记录与提醒的技术工具。用户之间因任务履行产生的争议，应由当事人自行协商解决，我们不作为争议一方，也不承担由此产生的责任。**
+
+9.2 对于因你自身原因（包括但不限于设备故障、网络异常、误操作、微信账号异常）导致的损失，我们不承担责任。
+
+9.3 在法律允许的最大范围内，我们对因使用或无法使用本服务产生的间接损失、可得利益损失不承担赔偿责任。
+
+9.4 本条不排除或限制我们依法应当承担的责任。
+
+## 十、法律适用与争议解决
+
+10.1 本协议的订立、效力、解释、履行及争议解决，适用中华人民共和国大陆地区法律。
+
+10.2 因本协议产生的争议，双方应友好协商解决；协商不成的，任何一方均可向有管辖权的人民法院提起诉讼。
+
+## 十一、其他
+
+11.1 本协议部分条款被认定为无效或不可执行的，不影响其余条款的效力。
+
+11.2 我们未行使或延迟行使本协议项下任何权利，不构成对该权利的放弃。
+
+## 十二、联系我们
+
+如你对本协议有任何疑问、意见或投诉，可通过以下方式联系我们：
+
+运营者：本小程序作者
+联系方式：小程序内「我的 → 问题与反馈」
+
+我们将在收到你的反馈后 15 个工作日内予以回复。', '2026-10-26 00:00:00', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00');
+
+INSERT INTO `t_app_agreement` (`agreement_id`, `type`, `title`, `version`, `content`, `effective_time`, `enabled_flag`, `create_time`, `update_time`) VALUES
+(2, 'privacy', '隐私政策', '1.0.0', '# 隐私政策
+
+版本：1.0.0
+生效日期：2026 年 10 月 26 日
+运营者：本小程序作者
+联系方式：小程序内「我的 → 问题与反馈」
+
+本小程序作者（以下简称"我们"）深知个人信息对你的重要性。我们依据《中华人民共和国个人信息保护法》《中华人民共和国网络安全法》《信息安全技术 个人信息安全规范》等法律法规，制定本政策。
+
+**本政策适用于「让我做」小程序。请你在使用前仔细阅读，特别是以加粗形式标注的内容。你勾选同意并登录使用，即表示你已理解并同意本政策。**
+
+## 一、我们收集哪些信息
+
+我们遵循"最小必要"原则，仅收集实现功能所必需的信息。
+
+### 1.1 你主动提供的信息
+
+| 信息项 | 收集场景 | 是否必需 | 用途 |
+| --- | --- | --- | --- |
+| 昵称 | 登录后引导填写 / "我的"页修改 | 必需 | 在任务、帮手列表中标识你 |
+| 头像 | 你主动选择上传 | 可选 | 在列表中展示；不上传则显示昵称首字色块 |
+| 手机号 | 你主动授权获取 | **可选** | 账号找回与身份核验；不授权不影响核心功能 |
+| 任务标题、交代内容 | 布置任务时填写 | 必需 | 生成任务并展示给参与者 |
+| 任务附图 | 你主动选择上传 | 可选 | 随任务展示给参与者 |
+| 完成备注、凭证图片 | 完成任务时填写 | 可选 | 向委托人证明完成情况 |
+| 拒绝理由 | 拒绝任务时填写 | 必需 | 让对方知道原因 |
+| 帮手申请附言 | 申请添加帮手时填写 | 可选 | 让对方识别你的身份 |
+
+### 1.2 你使用服务时我们自动收集的信息
+
+| 信息项 | 说明 | 用途 |
+| --- | --- | --- |
+| 微信 OpenID | 你在当前小程序下的唯一标识 | 账号识别与登录 |
+| 微信 UnionID | 同一微信开放平台账号下的统一标识（如你授权） | 多端身份打通 |
+| 登录时间、登录 IP、客户端标识（User-Agent） | 每次登录时记录 | 账号安全风控、异常登录排查 |
+| 帮手关系、邀请码 | 你与他人建立关系时生成 | 实现任务派发范围控制 |
+| 内容检测记录 | 提交的文本摘要、图片地址、检测结论 | 履行内容安全法律义务、留存审核证据 |
+
+### 1.3 我们**不会**收集的信息
+
+我们**不会**收集你的地理位置、通讯录、通话记录、短信、剪贴板内容、相册全量照片、麦克风录音、相机实时画面。选择图片时，我们仅获取你**主动选择的那一张**，不会读取相册其他内容。
+
+## 二、我们如何使用信息
+
+2.1 用于提供核心功能：创建账号、建立帮手关系、派发任务、发送站内提醒、记录完成状态。
+
+2.2 用于保障账号与内容安全：识别异常登录、检测违法违规内容、处理投诉与纠纷。
+
+2.3 用于改进服务：以**去标识化、汇总统计**的方式分析功能使用情况，不会定位到具体个人。
+
+2.4 **我们不会将你的个人信息用于本政策未载明的其他用途。** 如需超出本政策范围使用，我们会再次征得你的单独同意。
+
+## 三、信息的存储
+
+3.1 **存储地点**：你的个人信息存储于中华人民共和国境内的服务器（腾讯云广州地域）。我们不会将境内收集的个人信息传输至境外。
+
+3.2 **存储期限**：我们仅在实现本政策所述目的所必需的期限内保留你的个人信息。
+
+- 账号信息、任务数据：账号存续期间持续保存；
+- 你注销账号后：我们将在 **30 日内**删除或匿名化处理你的个人信息；
+- 法律法规另有规定的（如《网络安全法》要求网络日志留存不少于 6 个月），我们按要求留存，且仅用于配合监管与安全审计，不再用于其他目的。
+
+3.3 当超出保存期限后，我们将对你的个人信息进行删除或匿名化处理。
+
+## 四、信息的共享、转让与公开披露
+
+### 4.1 共享
+
+我们**不会向任何第三方出售你的个人信息**。仅在以下必要情形下共享：
+
+| 接收方 | 共享内容 | 目的 | 说明 |
+| --- | --- | --- | --- |
+| 深圳市腾讯计算机系统有限公司（微信） | 登录凭证、待检测的文本与图片、消息推送所需标识 | 微信登录、内容安全检测、消息推送 | 微信平台自身的处理规则适用其《微信隐私保护指引》 |
+| 腾讯云计算（北京）有限责任公司 | 你上传的图片文件 | 图片存储与访问 | 通过对象存储服务托管，仅用于存储 |
+
+除上述情形外，我们不会与任何第三方共享你的个人信息，除非：
+
+（一）事先获得你的明确同意；
+（二）根据法律法规、司法或行政机关强制性要求；
+（三）为维护社会公共利益、你或他人的生命财产安全所必需。
+
+### 4.2 转让
+
+我们不会转让你的个人信息。如因合并、分立、收购等原因需要转让，我们会告知你接收方信息，并要求接收方继续受本政策约束；接收方变更原处理目的的，将重新征得你的同意。
+
+### 4.3 公开披露
+
+我们不会公开披露你的个人信息。依法必须披露时，我们会告知你披露的目的、信息类型，并采取符合法律与行业标准的安全防护措施。
+
+## 五、我们如何保护信息
+
+5.1 **传输安全**：你与本服务之间的数据传输采用 HTTPS 加密传输。
+
+5.2 **访问控制**：仅因履行职责需要接触你信息的人员，方可按最小权限访问；我们与该等人员签署保密义务。
+
+5.3 **内容安全**：你提交的文本与图片均接入微信内容安全检测接口，防止违法违规内容传播，同时降低侵权风险。
+
+5.4 **安全事件处置**：如发生个人信息泄露、篡改、丢失等安全事件，我们将立即启动应急预案，采取补救措施，并按法律要求向你告知事件情况、可能影响、已采取的措施及你可自主防范的建议，同时向监管部门报告。
+
+## 六、你的权利
+
+依据《个人信息保护法》，你对自己的个人信息享有以下权利：
+
+6.1 **查阅、复制**：你可在"我的"页面查看昵称、头像等资料；如需完整信息副本，可通过本政策末尾联系方式申请。
+
+6.2 **更正、补充**：你可在"我的"页面直接修改昵称与头像；其他信息有误的，可联系我们更正。
+
+6.3 **删除**：你可以删除自己发布的任务内容、移除已上传的图片；符合法定删除情形时，也可要求我们删除。
+
+6.4 **撤回同意**：你可以通过不授权手机号、不上传头像等方式撤回相应同意。撤回不影响此前基于同意已进行的处理。
+
+6.5 **注销账号**：你可以通过本政策末尾的联系方式申请注销。注销后我们将按本政策第 3.2 条处理你的信息。
+
+6.6 **响应时限**：我们将在收到你的请求并核验身份后 **15 个工作日内**予以答复。对合理请求原则上不收取费用；对无端重复、超出合理限度的请求，我们可能予以拒绝并说明理由。
+
+## 七、未成年人保护
+
+7.1 本服务主要面向成年人。若你为**未满 14 周岁的儿童**，请务必在父母或其他监护人的陪同下阅读本政策，并在取得监护人**明示同意**后使用本服务。
+
+7.2 若我们发现在未事先获得监护人同意的情况下收集了儿童个人信息，将尽快删除相关信息。
+
+7.3 监护人如对儿童个人信息有疑问，可通过本政策末尾联系方式与我们联系。
+
+## 八、本政策的更新
+
+8.1 我们可能因法律法规变化、业务调整而更新本政策。更新后会以显著方式提示你，并更新版本号与生效日期。
+
+8.2 **对于收集信息范围、使用目的、共享对象等发生重大变更的，我们会重新征得你的明示同意。**
+
+8.3 你可在小程序"我的 → 用户协议 / 隐私政策"中随时查阅最新版本。
+
+## 九、联系我们
+
+如你对本政策有任何疑问、意见、投诉或需要行使上述权利，可通过以下方式联系我们：
+
+运营者：本小程序作者
+联系方式：小程序内「我的 → 问题与反馈」
+
+我们将在收到后 15 个工作日内回复。
+
+如你对我们的答复不满意，或认为我们的个人信息处理行为损害了你的合法权益，你还可以向网信、电信、公安、市场监管等主管部门投诉举报，或向有管辖权的人民法院提起诉讼。', '2026-10-26 00:00:00', 1, '2026-01-01 00:00:00', '2026-01-01 00:00:00');
+
+-- ----------------------------------------------------------------------------
 --  8. 定时任务
 -- ----------------------------------------------------------------------------
 -- cron 是 Spring 的 6 段式（秒 分 时 日 月 周），不要用 Quartz 的 ? 占位符。
@@ -1455,39 +1821,53 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- ============================================================================
 --  六、上线自检（执行完脚本后手工跑一遍）
 -- ----------------------------------------------------------------------------
--- 1) 表数量应为 54
+-- 1) 表数量应为 58
 -- SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE();
 --
--- 2) 核心表必须存在（返回 10 行）
+-- 2) 核心表必须存在
 -- SELECT table_name FROM information_schema.tables
 --  WHERE table_schema = DATABASE()
---    AND table_name IN ('t_wx_member','t_helper','t_helper_request','t_content_check','t_task',
---                       't_task_participant','t_task_event','t_task_notice',
---                       't_file','t_dict','t_dict_data');
+--    AND table_name IN ('t_wx_member','t_helper','t_helper_request','t_content_check',
+--                       't_task','t_task_participant','t_task_event','t_task_notice',
+--                       't_app_agreement','t_app_agreement_record','t_app_feedback',
+--                       't_app_version','t_file','t_dict','t_dict_data');
 --
 -- 3) 业务表必须全空（每行都应是 0）
 -- SELECT 't_wx_member' t, COUNT(*) c FROM t_wx_member
 -- UNION ALL SELECT 't_task', COUNT(*) FROM t_task
 -- UNION ALL SELECT 't_task_participant', COUNT(*) FROM t_task_participant
--- UNION ALL SELECT 't_helper', COUNT(*) FROM t_helper;
--- UNION ALL SELECT 't_content_check', COUNT(*) FROM t_content_check;
+-- UNION ALL SELECT 't_helper', COUNT(*) FROM t_helper
+-- UNION ALL SELECT 't_content_check', COUNT(*) FROM t_content_check
+-- UNION ALL SELECT 't_app_feedback', COUNT(*) FROM t_app_feedback
+-- UNION ALL SELECT 't_app_agreement_record', COUNT(*) FROM t_app_agreement_record;
 --
--- 4) 定时任务必须注册（否则到点生效与到期提醒全部静默失效）
+-- 4) 协议必须各一行且启用（否则登录被拒），正文里不能有占位符/邮箱
+-- SELECT type, version, enabled_flag, CHAR_LENGTH(content) len FROM t_app_agreement;
+-- SELECT type, (content LIKE '%〔%') has_placeholder, (content LIKE '%@%') has_email,
+--        (content LIKE '%住所地%') has_domicile
+--   FROM t_app_agreement WHERE enabled_flag = 1;      -- 三列都应为 0
+--
+-- 5) 版本只能有一行 current_flag = 1
+-- SELECT app_type, COUNT(1) FROM t_app_version
+--  WHERE current_flag = 1 AND deleted_flag = 0 GROUP BY app_type;
+-- SELECT version, version_label, current_flag FROM t_app_version;
+--
+-- 6) 定时任务必须注册（否则到点生效与到期提醒全部静默失效）
 -- SELECT job_name, trigger_value, enabled_flag FROM t_smart_job
 --  WHERE job_class = 'net.lab1024.sa.app.module.task.job.TaskScheduleJob';
 --
--- 5) 字典 4 本齐全（应返回 4 行，items 分别 6/5/2/9）
+-- 7) 字典 6 本齐全（items 分别 6/5/2/9/4/4）
 -- SELECT d.dict_code, COUNT(x.dict_data_id) items
 --   FROM t_dict d LEFT JOIN t_dict_data x ON x.dict_id = d.dict_id
---  WHERE d.dict_code IN ('TASK_STATUS','TASK_PARTICIPANT_STATUS',
---                        'TASK_COMPLETION_MODE','TASK_EVENT_TYPE')
+--  WHERE d.dict_code IN ('TASK_STATUS','TASK_PARTICIPANT_STATUS','TASK_COMPLETION_MODE',
+--                        'TASK_EVENT_TYPE','FEEDBACK_TYPE','FEEDBACK_STATUS')
 --  GROUP BY d.dict_code;
 --
--- 6) 后台账号唯一
+-- 8) 后台账号唯一
 -- SELECT employee_id, login_name, administrator_flag FROM t_employee;
 --
--- 7) 菜单数量应为 139
+-- 9) 后台菜单 138 条可见（表内共 139 条，含 1 条历史停用）
 -- SELECT COUNT(*) FROM t_menu WHERE deleted_flag = 0;
 --
--- 8) 导入字典后重启一次服务（或清 Redis 的 dict 缓存），确保字典缓存重建。
+-- 10) 导完字典后重启一次服务（或清 Redis 的 dict 缓存），确保字典缓存重建。
 -- ============================================================================

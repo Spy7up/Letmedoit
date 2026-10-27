@@ -1,62 +1,38 @@
--- ============================================================
--- 「让我做」用户协议 / 隐私政策（后台可配置）
--- ------------------------------------------------------------
--- 设计要点：
---   1. 正文存在 t_app_agreement，运营者可在后台改内容、发新版本，
---      不需要发版小程序
---   2. 同一类协议允许多个版本并存，只有 enabled_flag=1 且
---      effective_time <= 现在 的最新一条生效
---   3. 用户同意留痕在 t_app_agreement_record：
---      member_id + 类型 + 版本 + 时间 + IP + UA，
---      这是出现纠纷时唯一的举证材料，不能只在前端打个勾
+-- ============================================================================
+--  2026-10-27 / 03 · 协议正文改为「本小程序作者」
+-- ----------------------------------------------------------------------------
+--  做了什么：
+--    * 正文不再写运营者真实姓名与邮箱，统一用「本小程序作者」
+--    * 联系方式改为「小程序内『我的 → 问题与反馈』」
+--    * 争议解决去掉「运营者住所地」，改为「有管辖权的人民法院」
+--    * 顺带补齐：旧初始化脚本没导协议正文，这里在缺失时补两条（缺了会拒绝登录）
 --
--- 适用：已执行过 init.sql 的库，直接跑本脚本（幂等）。
---       全新库不用跑，init.sql 里已包含。
--- ============================================================
+--  为什么不用升版本：只改措辞与联系方式，不属于收集范围/用途变更，
+--  已同意过的用户不需要重新同意（详见 docs/AGREEMENT.md 第 3 节）。
+--
+--  幂等：有占位符才替换；已有协议行则跳过插入。可重复执行。
+-- ============================================================================
 
-CREATE TABLE IF NOT EXISTS `t_app_agreement` (
-  `agreement_id`   bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `type`           varchar(20)  NOT NULL COMMENT '类型 user用户协议 privacy隐私政策',
-  `title`          varchar(100) NOT NULL COMMENT '标题',
-  `version`        varchar(20)  NOT NULL COMMENT '版本号，如 1.0.0',
-  `content`        mediumtext   NOT NULL COMMENT '正文，纯文本（# 开头为标题行）',
-  `effective_time` datetime     NOT NULL COMMENT '生效时间',
-  `enabled_flag`   tinyint(1)   NOT NULL DEFAULT 1 COMMENT '是否启用 1启用 0停用',
-  `create_time`    datetime     NOT NULL COMMENT '创建时间',
-  `update_time`    datetime     NOT NULL COMMENT '更新时间',
-  PRIMARY KEY (`agreement_id`),
-  KEY `idx_type_enabled` (`type`, `enabled_flag`, `effective_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户协议与隐私政策';
+-- ---------------- 1) 已有协议行：把占位符/旧写法换掉 ----------------
+UPDATE `t_app_agreement`
+SET `content` = REPLACE(REPLACE(REPLACE(REPLACE(`content`,
+        '〔运营主体全称〕', '本小程序作者'),
+        '〔联系邮箱〕', '联系方式：小程序内「我的 → 问题与反馈」'),
+        '**运营者住所地**', ''),
+        '我的—用户协议与隐私政策', '我的 → 用户协议 / 隐私政策'),
+    `update_time` = NOW()
+WHERE `enabled_flag` = 1 AND `type` IN ('user', 'privacy');
 
-CREATE TABLE IF NOT EXISTS `t_app_agreement_record` (
-  `record_id`      bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `member_id`      bigint(20) unsigned NOT NULL COMMENT '会员ID',
-  `agreement_type` varchar(20)  NOT NULL COMMENT '协议类型 user/privacy',
-  `version`        varchar(20)  NOT NULL COMMENT '同意的版本号',
-  `agree_time`     datetime     NOT NULL COMMENT '同意时间',
-  `ip`             varchar(64)  DEFAULT NULL COMMENT '同意时的IP',
-  `user_agent`     varchar(255) DEFAULT NULL COMMENT '同意时的客户端标识',
-  `create_time`    datetime     NOT NULL COMMENT '创建时间',
-  PRIMARY KEY (`record_id`),
-  UNIQUE KEY `uk_member_type_version` (`member_id`, `agreement_type`, `version`),
-  KEY `idx_member` (`member_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户协议同意记录';
-
--- ============================================================
--- 初始版本协议正文（幂等：同类型同版本已存在则跳过）
--- 正文源文件：docs/legal/user-agreement.md / privacy-policy.md
--- 运营者改内容时，建议直接在小程序后台改，或改本表并更新 version
--- ============================================================
-
+-- ---------------- 2) 完全没有协议正文的库：补齐两条 ----------------
 INSERT INTO `t_app_agreement` (`type`, `title`, `version`, `content`, `effective_time`, `enabled_flag`, `create_time`, `update_time`)
 SELECT 'user', '用户协议', '1.0.0', '# 用户协议
 
 版本：1.0.0
 生效日期：2026 年 10 月 26 日
-运营者：〔运营主体全称〕
-联系邮箱：〔联系邮箱〕
+运营者：本小程序作者
+联系方式：小程序内「我的 → 问题与反馈」
 
-欢迎使用「让我做」小程序（以下简称"本服务"）。本协议是你与〔运营主体全称〕（以下简称"我们"）之间就使用本服务所订立的协议。
+欢迎使用「让我做」小程序（以下简称"本服务"）。本协议是你与本小程序作者（以下简称"我们"）之间就使用本服务所订立的协议。
 
 **请你在使用本服务前完整阅读本协议，特别是以加粗形式提示的免除或限制责任条款。你勾选"我已阅读并同意"或实际使用本服务，即表示你已充分理解并接受本协议全部内容。如你不同意本协议任何条款，请停止注册和使用。**
 
@@ -154,7 +130,7 @@ SELECT 'user', '用户协议', '1.0.0', '# 用户协议
 
 10.1 本协议的订立、效力、解释、履行及争议解决，适用中华人民共和国大陆地区法律。
 
-10.2 因本协议产生的争议，双方应友好协商解决；协商不成的，任何一方均可向**运营者住所地**有管辖权的人民法院提起诉讼。
+10.2 因本协议产生的争议，双方应友好协商解决；协商不成的，任何一方均可向有管辖权的人民法院提起诉讼。
 
 ## 十一、其他
 
@@ -166,22 +142,21 @@ SELECT 'user', '用户协议', '1.0.0', '# 用户协议
 
 如你对本协议有任何疑问、意见或投诉，可通过以下方式联系我们：
 
-运营者：〔运营主体全称〕
-联系邮箱：〔联系邮箱〕
+运营者：本小程序作者
+联系方式：小程序内「我的 → 问题与反馈」
 
 我们将在收到你的反馈后 15 个工作日内予以回复。', '2026-10-26 00:00:00', 1, NOW(), NOW()
-FROM DUAL
-WHERE NOT EXISTS (SELECT 1 FROM `t_app_agreement` WHERE `type` = 'user' AND `version` = '1.0.0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `t_app_agreement` WHERE `type` = 'user' AND `enabled_flag` = 1);
 
 INSERT INTO `t_app_agreement` (`type`, `title`, `version`, `content`, `effective_time`, `enabled_flag`, `create_time`, `update_time`)
 SELECT 'privacy', '隐私政策', '1.0.0', '# 隐私政策
 
 版本：1.0.0
 生效日期：2026 年 10 月 26 日
-运营者：〔运营主体全称〕
-联系邮箱：〔联系邮箱〕
+运营者：本小程序作者
+联系方式：小程序内「我的 → 问题与反馈」
 
-〔运营主体全称〕（以下简称"我们"）深知个人信息对你的重要性。我们依据《中华人民共和国个人信息保护法》《中华人民共和国网络安全法》《信息安全技术 个人信息安全规范》等法律法规，制定本政策。
+本小程序作者（以下简称"我们"）深知个人信息对你的重要性。我们依据《中华人民共和国个人信息保护法》《中华人民共和国网络安全法》《信息安全技术 个人信息安全规范》等法律法规，制定本政策。
 
 **本政策适用于「让我做」小程序。请你在使用前仔细阅读，特别是以加粗形式标注的内容。你勾选同意并登录使用，即表示你已理解并同意本政策。**
 
@@ -303,17 +278,22 @@ SELECT 'privacy', '隐私政策', '1.0.0', '# 隐私政策
 
 8.2 **对于收集信息范围、使用目的、共享对象等发生重大变更的，我们会重新征得你的明示同意。**
 
-8.3 你可在小程序"我的—用户协议与隐私政策"中随时查阅最新版本。
+8.3 你可在小程序"我的 → 用户协议 / 隐私政策"中随时查阅最新版本。
 
 ## 九、联系我们
 
 如你对本政策有任何疑问、意见、投诉或需要行使上述权利，可通过以下方式联系我们：
 
-运营者：〔运营主体全称〕
-联系邮箱：〔联系邮箱〕
+运营者：本小程序作者
+联系方式：小程序内「我的 → 问题与反馈」
 
 我们将在收到后 15 个工作日内回复。
 
 如你对我们的答复不满意，或认为我们的个人信息处理行为损害了你的合法权益，你还可以向网信、电信、公安、市场监管等主管部门投诉举报，或向有管辖权的人民法院提起诉讼。', '2026-10-26 00:00:00', 1, NOW(), NOW()
-FROM DUAL
-WHERE NOT EXISTS (SELECT 1 FROM `t_app_agreement` WHERE `type` = 'privacy' AND `version` = '1.0.0');
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM `t_app_agreement` WHERE `type` = 'privacy' AND `enabled_flag` = 1);
+
+-- ---------------- 验证 ----------------
+-- SELECT type, version, enabled_flag, CHAR_LENGTH(content) len FROM t_app_agreement;
+-- SELECT type, (content LIKE '%〔%') has_placeholder, (content LIKE '%@%') has_email,
+--        (content LIKE '%住所地%') has_domicile
+--   FROM t_app_agreement WHERE enabled_flag = 1;   -- 三列都应为 0
