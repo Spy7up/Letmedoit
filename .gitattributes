@@ -1,0 +1,14 @@
+# 统一换行：SQL 脚本与 shell 脚本必须 LF
+# CRLF 导入 MySQL 会把 \r 带进多行字符串（协议正文踩过），shell 脚本带 CR 会直接执行失败
+*.sql text eol=lf
+*.sh  text eol=lf
+
+# 二进制文件不做换行转换
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.jar  binary
+*.woff binary
+*.woff2 binary
