@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.business.member.dao.MemberDao">
+
+    <!-- 会员指标列：与列表、详情共用，改口径只改这里 -->
+    <sql id="metricColumns">
+        m.member_id AS memberId,
+        m.nickname,
+        m.avatar,
+        m.invite_code AS inviteCode,
+        m.disabled_flag AS disabledFlag,
+        m.create_time AS createTime,
+        m.last_login_time AS lastLoginTime,
+        COALESCE(hc.cnt, 0) AS helperCount,
+        COALESCE(tc.cnt, 0) AS createdTaskCount,
+        COALESCE(pc.participantCount, 0) AS participantCount,
+        COALESCE(pc.completedCount, 0) AS completedCount,
+        COALESCE(pc.onTimeCount, 0) AS onTimeCount
+    </sql>
+
+    <sql id="metricJoins">
+        LEFT JOIN (
+            SELECT member_id, COUNT(*) AS cnt FROM t_helper WHERE deleted_flag = 0 GROUP BY member_id
+        ) hc ON hc.member_id = m.member_id
+        LEFT JOIN (
+            SELECT creator_id, COUNT(*) AS cnt FROM t_task WHERE deleted_flag = 0 GROUP BY creator_id
+        ) tc ON tc.creator_id = m.member_id
+        LEFT JOIN (
+            SELECT p.member_id AS memberId,
+                   COUNT(*) AS participantCount,
+                   SUM(CASE WHEN p.status = 2 AND p.complete_time IS NOT NULL THEN 1 ELSE 0 END) AS completedCount,
+                   SUM(CASE WHEN p.status = 2 AND p.complete_time IS NOT NULL AND p.complete_time &lt;= t.deadline THEN 1 ELSE 0 END) AS onTimeCount
+            FROM t_task_participant p
+            INNER JOIN t_task t ON t.task_id = p.task_id AND t.deleted_flag = 0
+            WHERE p.deleted_flag = 0
+            GROUP BY p.member_id
+        ) pc ON pc.memberId = m.member_id
+    </sql>
+
+    <select id="query" resultType="net.lab1024.sa.admin.module.business.member.domain.vo.MemberVO">
+        SELECT
+        <include refid="metricColumns"/>
+        FROM t_wx_member m
+        <include refid="metricJoins"/>
+        <where>
+            m.deleted_flag = 0
+            <if test="query.searchWord != null and query.searchWord != ''">
+                AND (
+                    m.nickname LIKE CONCAT('%', #{query.searchWord}, '%')
+                    OR m.invite_code = #{query.searchWord}
+                    OR CAST(m.member_id AS CHAR) = #{query.searchWord}
+                )
+            </if>
+            <if test="query.disabledFlag != null">
+                AND m.disabled_flag = #{query.disabledFlag}
+            </if>
+            <if test="query.beginDate != null">
+                AND m.create_time &gt;= #{query.beginDate}
+            </if>
+            <if test="query.endDate != null">
+                AND m.create_time &lt; DATE_ADD(#{query.endDate}, INTERVAL 1 DAY)
+            </if>
+        </where>
+        <if test="query.sortItemList == null or query.sortItemList.size == 0">
+            ORDER BY m.member_id DESC
+        </if>
+    </select>
+
+    <select id="selectDetail" resultType="net.lab1024.sa.admin.module.business.member.domain.vo.MemberDetailVO">
+        SELECT
+        <include refid="metricColumns"/>
+        FROM t_wx_member m
+        <include refid="metricJoins"/>
+        WHERE m.deleted_flag = 0 AND m.member_id = #{memberId}
+    </select>
+
+    <select id="selectHelperList" resultType="net.lab1024.sa.admin.module.business.member.domain.vo.MemberHelperVO">
+        SELECT h.helper_member_id AS helperMemberId,
+               hm.nickname,
+               hm.avatar,
+               hm.invite_code AS inviteCode,
+               h.remark,
+               h.create_time AS createTime
+        FROM t_helper h
+        INNER JOIN t_wx_member hm ON hm.member_id = h.helper_member_id AND hm.deleted_flag = 0
+        WHERE h.deleted_flag = 0 AND h.member_id = #{memberId}
+        ORDER BY h.helper_id DESC
+        LIMIT 50
+    </select>
+
+    <select id="selectTaskList" resultType="net.lab1024.sa.admin.module.business.member.domain.vo.MemberTaskVO">
+        SELECT * FROM (
+            SELECT t.task_id AS taskId,
+                   t.title,
+                   t.creator_id AS creatorId,
+                   c.nickname AS creatorNickname,
+                   t.status AS status,
+                   t.deadline AS deadline,
+                   t.create_time AS createTime,
+                   'participant' AS memberRole,
+                   p.status AS participantStatus,
+                   p.complete_time AS completeTime,
+                   CASE
+                       WHEN p.complete_time IS NULL THEN NULL
+                       WHEN p.complete_time &lt;= t.deadline THEN 1
+                       ELSE 0
+                   END AS onTimeFlag
+            FROM t_task_participant p
+            INNER JOIN t_task t ON t.task_id = p.task_id AND t.deleted_flag = 0
+            INNER JOIN t_wx_member c ON c.member_id = t.creator_id
+            WHERE p.deleted_flag = 0 AND p.member_id = #{memberId}
+            UNION ALL
+            SELECT t.task_id, t.title, t.creator_id, c.nickname, t.status, t.deadline, t.create_time,
+                   'creator', NULL, NULL, NULL
+            FROM t_task t
+            INNER JOIN t_wx_member c ON c.member_id = t.creator_id
+            WHERE t.deleted_flag = 0 AND t.creator_id = #{memberId}
+        ) x
+        ORDER BY x.createTime DESC
+        LIMIT 20
+    </select>
+
+    <select id="selectDayStat" resultType="net.lab1024.sa.admin.module.business.member.domain.vo.MemberDayStatVO">
+        SELECT DATE_FORMAT(p.complete_time, '%Y-%m-%d') AS statDate,
+               COUNT(*) AS completedCount,
+               SUM(CASE WHEN p.complete_time &lt;= t.deadline THEN 1 ELSE 0 END) AS onTimeCount
+        FROM t_task_participant p
+        INNER JOIN t_task t ON t.task_id = p.task_id AND t.deleted_flag = 0
+        WHERE p.deleted_flag = 0
+          AND p.member_id = #{memberId}
+          AND p.status = 2
+          AND p.complete_time &gt;= #{startTime}
+          AND p.complete_time &lt; #{endTime}
+        GROUP BY DATE(p.complete_time)
+        ORDER BY DATE(p.complete_time)
+    </select>
+
+    <select id="selectPendingHelperRequestCount" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM t_helper_request
+        WHERE deleted_flag = 0 AND status = 0 AND to_member_id = #{memberId}
+    </select>
+
+</mapper>

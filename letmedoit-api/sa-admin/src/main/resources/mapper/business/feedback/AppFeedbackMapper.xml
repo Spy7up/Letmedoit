@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.business.feedback.dao.AppFeedbackDao">
+
+    <sql id="columns">
+        f.feedback_id AS feedbackId,
+        f.member_id AS memberId,
+        m.nickname AS memberNickname,
+        m.avatar AS memberAvatar,
+        f.type AS type,
+        f.content,
+        f.images,
+        f.contact,
+        f.status AS status,
+        f.reply_content AS replyContent,
+        f.reply_member_id AS replyMemberId,
+        e.actual_name AS replyEmployeeName,
+        f.reply_time AS replyTime,
+        f.create_time AS createTime
+    </sql>
+
+    <select id="query" resultType="net.lab1024.sa.admin.module.business.feedback.domain.vo.AppFeedbackVO">
+        SELECT
+        <include refid="columns"/>
+        FROM t_app_feedback f
+        LEFT JOIN t_wx_member m ON m.member_id = f.member_id
+        LEFT JOIN t_employee e ON e.employee_id = f.reply_member_id
+        <where>
+            f.deleted_flag = 0
+            <if test="query.searchWord != null and query.searchWord != ''">
+                AND (
+                    f.content LIKE CONCAT('%', #{query.searchWord}, '%')
+                    OR m.nickname LIKE CONCAT('%', #{query.searchWord}, '%')
+                    OR CAST(f.feedback_id AS CHAR) = #{query.searchWord}
+                )
+            </if>
+            <if test="query.type != null">
+                AND f.type = #{query.type}
+            </if>
+            <if test="query.status != null">
+                AND f.status = #{query.status}
+            </if>
+            <if test="query.memberId != null">
+                AND f.member_id = #{query.memberId}
+            </if>
+            <if test="query.beginDate != null">
+                AND f.create_time &gt;= #{query.beginDate}
+            </if>
+            <if test="query.endDate != null">
+                AND f.create_time &lt; DATE_ADD(#{query.endDate}, INTERVAL 1 DAY)
+            </if>
+        </where>
+        <if test="query.sortItemList == null or query.sortItemList.size == 0">
+            ORDER BY f.feedback_id DESC
+        </if>
+    </select>
+
+    <select id="selectDetail" resultType="net.lab1024.sa.admin.module.business.feedback.domain.vo.AppFeedbackVO">
+        SELECT
+        <include refid="columns"/>
+        FROM t_app_feedback f
+        LEFT JOIN t_wx_member m ON m.member_id = f.member_id
+        LEFT JOIN t_employee e ON e.employee_id = f.reply_member_id
+        WHERE f.deleted_flag = 0 AND f.feedback_id = #{feedbackId}
+    </select>
+
+    <select id="selectStatus" resultType="java.lang.Integer">
+        SELECT status FROM t_app_feedback WHERE deleted_flag = 0 AND feedback_id = #{feedbackId}
+    </select>
+
+    <update id="updateReply">
+        UPDATE t_app_feedback
+        SET status = #{status},
+            reply_content = #{replyContent,jdbcType=VARCHAR},
+            reply_member_id = #{employeeId},
+            reply_time = NOW(),
+            update_time = NOW()
+        WHERE feedback_id = #{feedbackId}
+          AND deleted_flag = 0
+          AND status = #{oldStatus}
+    </update>
+
+</mapper>

@@ -5,6 +5,7 @@
 | 文档 | 位置 | 说明 |
 |---|---|---|
 | 总设计文档 | [`design/让我做-总设计文档.md`](./design/让我做-总设计文档.md) | 产品定位、业务流程、状态机、数据模型、接口契约、通知体系、登录架构、UI 规范的唯一汇总 |
+| 管理后台开发技术规范 | [`design/管理后台开发技术规范.md`](./design/管理后台开发技术规范.md) | 后台技术边界、分层规范、指标口径、接口与页面清单 |
 | 高保真原型 | [`prototype/index.html`](./prototype/index.html) | 按功能模块拆分，浏览器打开导航页挑选 |
 | 小程序开发规范（AI Agent） | [`../letmedoit-miniprogram/docs/AI-Agent-小程序开发规范.md`](../letmedoit-miniprogram/docs/AI-Agent-小程序开发规范.md) | 前端分层铁律、硬约束、设计要求 |
 | 后端开发规范（AI Agent） | [`../letmedoit-api/docs/AI-Agent-后端开发规范.md`](../letmedoit-api/docs/AI-Agent-后端开发规范.md) | SmartAdmin 分层规范、硬约束、自检清单 |

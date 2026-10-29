@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.business.task.dao.TaskDao">
+
+    <!-- 任务列 + 参与统计，列表与详情共用 -->
+    <sql id="taskColumns">
+        t.task_id AS taskId,
+        t.title,
+        t.creator_id AS creatorId,
+        c.nickname AS creatorNickname,
+        t.status AS status,
+        t.completion_mode AS completionMode,
+        t.start_time AS startTime,
+        t.deadline AS deadline,
+        t.create_time AS createTime,
+        COALESCE(p.participantCount, 0) AS participantCount,
+        COALESCE(p.acceptedCount, 0) AS acceptedCount,
+        COALESCE(p.completedCount, 0) AS completedCount,
+        CASE WHEN t.status IN (1, 2) AND t.deadline &lt; NOW() THEN 1 ELSE 0 END AS overdueFlag
+    </sql>
+
+    <sql id="participantJoin">
+        LEFT JOIN (
+            SELECT task_id,
+                   COUNT(*) AS participantCount,
+                   SUM(CASE WHEN status IN (1, 2) THEN 1 ELSE 0 END) AS acceptedCount,
+                   SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) AS completedCount
+            FROM t_task_participant
+            WHERE deleted_flag = 0
+            GROUP BY task_id
+        ) p ON p.task_id = t.task_id
+    </sql>
+
+    <select id="query" resultType="net.lab1024.sa.admin.module.business.task.domain.vo.TaskVO">
+        SELECT
+        <include refid="taskColumns"/>
+        FROM t_task t
+        INNER JOIN t_wx_member c ON c.member_id = t.creator_id
+        <include refid="participantJoin"/>
+        <where>
+            t.deleted_flag = 0
+            <if test="query.searchWord != null and query.searchWord != ''">
+                AND (
+                    t.title LIKE CONCAT('%', #{query.searchWord}, '%')
+                    OR c.nickname LIKE CONCAT('%', #{query.searchWord}, '%')
+                    OR CAST(t.task_id AS CHAR) = #{query.searchWord}
+                )
+            </if>
+            <if test="query.status != null">
+                AND t.status = #{query.status}
+            </if>
+            <if test="query.creatorId != null">
+                AND t.creator_id = #{query.creatorId}
+            </if>
+            <if test="query.overdueFlag != null and query.overdueFlag">
+                AND t.status IN (1, 2) AND t.deadline &lt; NOW()
+            </if>
+            <if test="query.overdueFlag != null and !query.overdueFlag">
+                AND NOT (t.status IN (1, 2) AND t.deadline &lt; NOW())
+            </if>
+            <if test="query.beginDate != null">
+                AND t.create_time &gt;= #{query.beginDate}
+            </if>
+            <if test="query.endDate != null">
+                AND t.create_time &lt; DATE_ADD(#{query.endDate}, INTERVAL 1 DAY)
+            </if>
+        </where>
+        <if test="query.sortItemList == null or query.sortItemList.size == 0">
+            ORDER BY t.task_id DESC
+        </if>
+    </select>
+
+    <select id="selectDetail" resultType="net.lab1024.sa.admin.module.business.task.domain.vo.TaskDetailVO">
+        SELECT
+        <include refid="taskColumns"/>,
+        c.avatar AS creatorAvatar,
+        t.description,
+        t.images,
+        t.start_notify_flag AS startNotifyFlag,
+        t.remind_minutes AS remindMinutes,
+        t.edit_count AS editCount,
+        t.update_time AS updateTime
+        FROM t_task t
+        INNER JOIN t_wx_member c ON c.member_id = t.creator_id
+        <include refid="participantJoin"/>
+        WHERE t.deleted_flag = 0 AND t.task_id = #{taskId}
+    </select>
+
+    <select id="selectParticipantList" resultType="net.lab1024.sa.admin.module.business.task.domain.vo.TaskParticipantVO">
+        SELECT p.participant_id AS participantId,
+               p.member_id AS memberId,
+               m.nickname,
+               m.avatar,
+               p.status AS status,
+               p.complete_time AS completeTime,
+               p.complete_remark AS completeRemark,
+               p.complete_images AS completeImages,
+               p.reject_reason AS rejectReason,
+               CASE
+                   WHEN p.complete_time IS NULL THEN NULL
+                   WHEN p.complete_time &lt;= t.deadline THEN 1
+                   ELSE 0
+               END AS onTimeFlag
+        FROM t_task_participant p
+        INNER JOIN t_task t ON t.task_id = p.task_id
+        LEFT JOIN t_wx_member m ON m.member_id = p.member_id
+        WHERE p.deleted_flag = 0 AND p.task_id = #{taskId}
+        ORDER BY p.participant_id ASC
+    </select>
+
+    <select id="selectEventList" resultType="net.lab1024.sa.admin.module.business.task.domain.vo.TaskEventVO">
+        SELECT e.event_id AS eventId,
+               e.event_type AS eventType,
+               e.content,
+               e.actor_id AS actorId,
+               m.nickname AS actorNickname,
+               e.create_time AS createTime
+        FROM t_task_event e
+        LEFT JOIN t_wx_member m ON m.member_id = e.actor_id
+        WHERE e.task_id = #{taskId}
+        ORDER BY e.event_id ASC
+    </select>
+
+</mapper>

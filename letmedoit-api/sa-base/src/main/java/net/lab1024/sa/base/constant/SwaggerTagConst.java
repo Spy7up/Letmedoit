@@ -39,12 +39,6 @@ public class SwaggerTagConst {
 
         public static final String CODE_GENERATOR = "业务支撑-代码生成";
 
-        public static final String CHANGE_LOG = "业务支撑-更新日志";
-
-        public static final String HELP_DOC = "业务支撑-帮助文档";
-
-        public static final String FEEDBACK = "业务支撑-意见反馈";
-
         public static final String TABLE_COLUMN = "业务支撑-列自定义";
 
         public static final String PROTECT = "业务支撑-网络安全";

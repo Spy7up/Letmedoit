@@ -158,6 +158,7 @@ PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 | 日期 | 目录 | 内容 | 影响 |
 |---|---|---|---|
+| 2026-10-29 | `updates/2026-10-29/` | ① 新增「让我做运营」菜单树 14 条（1 目录 + 7 页面含 2 个隐藏详情页 + 6 个按钮权限点）；② 下线 60 条演示/框架菜单；③ **删除 12 张遗留表**（`t_goods`/`t_category`/`t_oa_*`/`t_help_doc*`/`t_change_log`/`t_feedback`），全库由 58 表降到 46 表；④ 清理 2 条历史孤儿菜单，后台菜单 93→91 条 | ① 纯新增 `t_menu`；② 删 `t_menu`/`t_role_menu` 记录；③ **DROP TABLE，不可回滚**。①② 跑完重新登录；③ 执行前必须 mysqldump 备份 |
 | 2026-10-27 | `updates/2026-10-27/` | 基线重建：新增 `t_app_feedback` + 反馈两本字典；新增 `t_app_version`；协议正文改为「本小程序作者」；版本记录对齐 1.0.0 | 新库直接用 `init/letmedoit_init.sql`；已有库跑该目录 01→04 |
 
 > 新增一行时按日期倒序写（新的在最上面），一行说清「改了什么表/数据」和「跑了会怎样」。

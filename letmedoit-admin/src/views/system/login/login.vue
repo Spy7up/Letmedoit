@@ -1,0 +1,237 @@
+<!--
+  * 登录
+  *
+  * @Author:    1024创新实验室-主任：卓大
+  * @Date:      2022-09-12 22:34:00
+  * @Wechat:    zhuda1024
+  * @Email:     lab1024@163.com
+  * @Copyright  1024创新实验室 （ https://1024lab.net ），Since 2012
+  *
+-->
+<template>
+  <div class="login-container">
+    <div class="box-item desc">
+      <div class="welcome">
+        <p>让我做 · 运营管理后台</p>
+        <p class="desc">
+          面向运营同学的数据与运营后台：会员注册、帮手（好友）关系、任务完成情况与准时率、小程序问题反馈处理。
+          <br />
+          <br />
+          所有指标在后端统一口径统计，页面只负责展示；每个会员都能下钻到独立报表，查看他的帮手与任务记录。
+          <br />
+          <br />
+          <span class="setence">
+            使用须知：
+            <br />
+            &nbsp;&nbsp;&nbsp;&nbsp;1. 账号由管理员分配，请勿共用，离座请退出登录；
+            <br />
+            &nbsp;&nbsp;&nbsp;&nbsp;2. 会员昵称、头像与任务内容属于个人信息，仅限运营分析使用；
+            <br />
+            &nbsp;&nbsp;&nbsp;&nbsp;3. 处理反馈请写清结论，会员可在小程序内查看回复。
+          </span>
+        </p>
+      </div>
+    </div>
+    <div class="box-item login">
+      <div class="login-title">账号登录</div>
+      <a-form ref="formRef" class="login-form" :model="loginForm" :rules="rules">
+        <a-form-item name="loginName">
+          <a-input v-model:value.trim="loginForm.loginName" placeholder="请输入用户名" />
+        </a-form-item>
+        <a-form-item name="emailCode" v-if="emailCodeShowFlag">
+          <a-input-group compact>
+            <a-input style="width: calc(100% - 110px)" v-model:value="loginForm.emailCode" autocomplete="on" placeholder="请输入邮箱验证码" />
+            <a-button @click="sendSmsCode" class="code-btn" type="primary" :disabled="emailCodeButtonDisabled">
+              {{ emailCodeTips }}
+            </a-button>
+          </a-input-group>
+        </a-form-item>
+        <a-form-item name="password">
+          <a-input-password
+            v-model:value="loginForm.password"
+            autocomplete="on"
+            :type="showPassword ? 'text' : 'password'"
+            placeholder="请输入密码"
+          />
+        </a-form-item>
+        <a-form-item name="captchaCode">
+          <a-input class="captcha-input" v-model:value.trim="loginForm.captchaCode" placeholder="请输入验证码" />
+          <img class="captcha-img" :src="captchaBase64Image" @click="getCaptcha" />
+        </a-form-item>
+
+        <a-form-item>
+          <div class="btn" @click="onLogin">登录</div>
+        </a-form-item>
+      </a-form>
+    </div>
+  </div>
+</template>
+<script setup>
+  import { message } from 'ant-design-vue';
+  import { onMounted, onUnmounted, reactive, ref } from 'vue';
+  import { useRouter } from 'vue-router';
+  import { loginApi } from '/@/api/system/login-api';
+  import { SmartLoading } from '/@/components/framework/smart-loading';
+  import { LOGIN_DEVICE_ENUM } from '/@/constants/system/login-device-const';
+  import { useUserStore } from '/@/store/modules/system/user';
+
+  import { buildRoutes } from '/@/router/index';
+  import { smartSentry } from '/@/lib/smart-sentry';
+  import { encryptData } from '/@/lib/encrypt';
+  import { localSave } from '/@/utils/local-util';
+  import LocalStorageKeyConst from '/@/constants/local-storage-key-const';
+  import { useDictStore } from '/@/store/modules/system/dict';
+  import { dictApi } from '/@/api/support/dict-api';
+
+  //--------------------- 登录表单 ---------------------------------
+
+  const loginForm = reactive({
+    loginName: 'admin',
+    password: '',
+    captchaCode: '',
+    captchaUuid: '',
+    loginDevice: LOGIN_DEVICE_ENUM.PC.value,
+  });
+  const rules = {
+    loginName: [{ required: true, message: '用户名不能为空' }],
+    password: [{ required: true, message: '密码不能为空' }],
+    captchaCode: [{ required: true, message: '验证码不能为空' }],
+  };
+
+  const showPassword = ref(false);
+  const router = useRouter();
+  const formRef = ref();
+  const rememberPwd = ref(false);
+
+  onMounted(() => {
+    document.onkeyup = (e) => {
+      if (e.keyCode === 13) {
+        onLogin();
+      }
+    };
+  });
+
+  onUnmounted(() => {
+    document.onkeyup = null;
+  });
+
+  //登录
+  async function onLogin() {
+    formRef.value.validate().then(async () => {
+      try {
+        SmartLoading.show();
+        // 密码加密
+        let encryptPasswordForm = Object.assign({}, loginForm, {
+          password: encryptData(loginForm.password),
+        });
+        const res = await loginApi.login(encryptPasswordForm);
+        stopRefreshCaptchaInterval();
+        localSave(LocalStorageKeyConst.USER_TOKEN, res.data.token ? res.data.token : '');
+        message.success('登录成功');
+        //更新用户信息到pinia
+        useUserStore().setUserLoginInfo(res.data);
+        // 初始化数据字典
+        const dictRes = await dictApi.getAllDictData();
+        useDictStore().initData(dictRes.data);
+        //构建系统的路由
+        buildRoutes();
+        router.push('/home');
+      } catch (e) {
+        if (e.data && e.data.code !== 0) {
+          loginForm.captchaCode = '';
+          getCaptcha();
+        }
+        smartSentry.captureError(e);
+      } finally {
+        SmartLoading.hide();
+      }
+    });
+  }
+
+  //--------------------- 验证码 ---------------------------------
+
+  const captchaBase64Image = ref('');
+
+  async function getCaptcha() {
+    try {
+      let captchaResult = await loginApi.getCaptcha();
+      captchaBase64Image.value = captchaResult.data.captchaBase64Image;
+      loginForm.captchaUuid = captchaResult.data.captchaUuid;
+      beginRefreshCaptchaInterval(captchaResult.data.expireSeconds);
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  let refreshCaptchaInterval = null;
+
+  function beginRefreshCaptchaInterval(expireSeconds) {
+    if (refreshCaptchaInterval === null) {
+      refreshCaptchaInterval = setInterval(getCaptcha, (expireSeconds - 5) * 1000);
+    }
+  }
+
+  function stopRefreshCaptchaInterval() {
+    if (refreshCaptchaInterval != null) {
+      clearInterval(refreshCaptchaInterval);
+      refreshCaptchaInterval = null;
+    }
+  }
+
+  onMounted(() => {
+    getCaptcha();
+    getTwoFactorLoginFlag();
+  });
+
+  //--------------------- 邮箱验证码 ---------------------------------
+
+  const emailCodeShowFlag = ref(false);
+  let emailCodeTips = ref('获取邮箱验证码');
+  let emailCodeButtonDisabled = ref(false);
+  // 定时器
+  let countDownTimer = null;
+
+  // 开始倒计时
+  function runCountDown() {
+    emailCodeButtonDisabled.value = true;
+    let countDown = 60;
+    emailCodeTips.value = `${countDown}秒后重新获取`;
+    countDownTimer = setInterval(() => {
+      if (countDown > 1) {
+        countDown--;
+        emailCodeTips.value = `${countDown}秒后重新获取`;
+      } else {
+        clearInterval(countDownTimer);
+        emailCodeButtonDisabled.value = false;
+        emailCodeTips.value = '获取验证码';
+      }
+    }, 1000);
+  }
+
+  // 获取双因子登录标识
+  async function getTwoFactorLoginFlag() {
+    try {
+      let result = await loginApi.getTwoFactorLoginFlag();
+      emailCodeShowFlag.value = result.data;
+    } catch (e) {
+      smartSentry.captureError(e);
+    }
+  }
+
+  // 发送邮箱验证码
+  async function sendSmsCode() {
+    try {
+      SmartLoading.show();
+      let result = await loginApi.sendLoginEmailCode(loginForm.loginName);
+      message.success('验证码发送成功!请登录邮箱查看验证码~');
+      runCountDown();
+    } catch (e) {
+      smartSentry.captureError(e);
+    } finally {
+      SmartLoading.hide();
+    }
+  }
+</script>
+<style lang="less" scoped>
+  @import './login.less';
+</style>

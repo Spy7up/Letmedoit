@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.business.helper.dao.HelperDao">
+
+    <select id="query" resultType="net.lab1024.sa.admin.module.business.helper.domain.vo.HelperVO">
+        SELECT h.helper_id AS helperId,
+               h.member_id AS memberId,
+               m.nickname AS memberNickname,
+               m.invite_code AS memberInviteCode,
+               h.helper_member_id AS helperMemberId,
+               hm.nickname AS helperNickname,
+               hm.invite_code AS helperInviteCode,
+               h.remark,
+               h.create_time AS createTime
+        FROM t_helper h
+        INNER JOIN t_wx_member m ON m.member_id = h.member_id AND m.deleted_flag = 0
+        INNER JOIN t_wx_member hm ON hm.member_id = h.helper_member_id AND hm.deleted_flag = 0
+        WHERE h.deleted_flag = 0
+        <if test="query.memberId != null">
+            AND (h.member_id = #{query.memberId} OR h.helper_member_id = #{query.memberId})
+        </if>
+        <if test="query.searchWord != null and query.searchWord != ''">
+            AND (
+                m.nickname LIKE CONCAT('%', #{query.searchWord}, '%')
+                OR hm.nickname LIKE CONCAT('%', #{query.searchWord}, '%')
+                OR m.invite_code = #{query.searchWord}
+                OR hm.invite_code = #{query.searchWord}
+            )
+        </if>
+        <if test="query.beginDate != null">
+            AND h.create_time &gt;= #{query.beginDate}
+        </if>
+        <if test="query.endDate != null">
+            AND h.create_time &lt; DATE_ADD(#{query.endDate}, INTERVAL 1 DAY)
+        </if>
+        <if test="query.sortItemList == null or query.sortItemList.size == 0">
+            ORDER BY h.helper_id DESC
+        </if>
+    </select>
+
+</mapper>
