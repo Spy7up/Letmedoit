@@ -134,7 +134,7 @@ PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 | `CREATE TABLE IF NOT EXISTS` 没生效 | 库里有同名旧结构，`IF NOT EXISTS` 不会改结构。用 updates 里的 `ALTER` 脚本补 |
 | 中文变问号 | 客户端连接字符集不是 utf8mb4；用 `mysql --default-character-set=utf8mb4` |
 | 时间差 8 小时 | 连接串 `serverTimezone=Asia/Shanghai`，或建库时 `SET time_zone='+08:00'` |
-| 生产库名 | `-Pprod` 打包对应 `letmedoit`；`-Pdev` 对应 `smart_admin_v3`（见 `docs/二次开发指南.md`） |
+| 生产库名 | `-Pprod` 打包对应 `letmedoit`；`-Pdev` 对应 `smart_admin_v3`（见 `docs/AI-Agent-后端开发规范.md`） |
 
 ---
 

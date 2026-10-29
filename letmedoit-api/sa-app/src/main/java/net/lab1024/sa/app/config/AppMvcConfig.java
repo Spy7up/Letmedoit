@@ -33,7 +33,7 @@ public class AppMvcConfig implements WebMvcConfigurer {
 
     /**
      * 版本接口免登录：登录页也可能展示版本号，且版本号不属于用户数据。
-     * 版本由后台统一维护，见 docs/版本管理.md。
+     * 版本由后台统一维护，见 doc/design/让我做-总设计文档.md 第 10 章。
      */
     private static final String[] VERSION_PUBLIC_PATHS = {
             "/api/version/current"

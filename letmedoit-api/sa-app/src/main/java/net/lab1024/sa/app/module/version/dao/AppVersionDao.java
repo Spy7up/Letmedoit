@@ -9,7 +9,7 @@ import org.apache.ibatis.annotations.Param;
  * 版本 DAO
  * <p>
  * 小程序端只读「当前版本」；后台的列表/新增/发布走 sa-admin 自己的 DAO
- * （sa-admin 不依赖 sa-app，两边共用同一张 t_app_version），设计见 docs/版本管理.md。
+ * （sa-admin 不依赖 sa-app，两边共用同一张 t_app_version），设计见 doc/design/让我做-总设计文档.md 第 10 章。
  *
  * @author letmedoit
  */

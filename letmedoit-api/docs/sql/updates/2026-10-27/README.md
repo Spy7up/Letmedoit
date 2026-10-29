@@ -14,8 +14,8 @@
 
 对应功能：
 
-- 问题与反馈：小程序「我的 → 问题与反馈」，接口 `/api/feedback/*`，见 `docs/问题与反馈.md`
-- 版本管理：`/api/version/current`，「我的」页脚与关于弹窗的版本文案，见 `docs/版本管理.md`
+- 问题与反馈：小程序「我的 → 问题与反馈」，接口 `/api/feedback/*`，见 `doc/design/让我做-总设计文档.md` §11
+- 版本管理：`/api/version/current`，「我的」页脚与关于弹窗的版本文案，见 `doc/design/让我做-总设计文档.md` §10
 - 协议正文：见 `docs/AGREEMENT.md` 第 2 节（不写真实姓名/邮箱的理由与规则）
 
 ## 执行顺序

@@ -1,8 +1,9 @@
-# SmartAdmin 二次开发指南（面向 AI Agent）
+# 后端开发规范（面向 AI Agent）
 
 > 读者：接下来要在这个仓库里写代码的 AI Agent / 新同事。
 > 目标：读完这一份，就能按项目既有风格新增模块、接口、表，而不破坏现有约定。
 > 依据：SmartAdmin 官方《Java 规范 V3.0》+ **本仓库实际代码**。
+> 业务与接口设计结论见 `../../doc/design/让我做-总设计文档.md`。
 
 ---
 
@@ -820,7 +821,7 @@ public class CouponController {
 | 加配置项 | `sa-base/.../dev/sa-base.yaml` + `@ConfigurationProperties` |
 | 加权限码 | `t_menu.api_perms` + `@SaCheckPermission` |
 | 生成 CRUD 骨架 | 后台「代码生成」页面，`CodeGeneratorController` |
-| 小程序登录/通知 | `sa-app/README.md`、`docs/微信小程序一键登录改造方案.md` |
+| 小程序登录/通知/任务业务设计 | `sa-app/README.md`、`doc/design/让我做-总设计文档.md` |
 | 建表 / 改表脚本 | `docs/sql/README.md`（规则）→ `init/letmedoit_init.sql`（全量）/ `updates/<日期>/`（增量） |
 
 ---

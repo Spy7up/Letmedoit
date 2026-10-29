@@ -156,4 +156,4 @@ Long memberId  = AppRequestUtil.getMemberId();
 ## 待办
 
 1. 填入真实 `WX_MINIAPP_APPID` / `WX_MINIAPP_SECRET`，关闭 mock，验证 code2session 与手机号
-2. 微信支付（JSAPI 下单 + 回调验签 + 幂等），见 `docs/微信小程序一键登录改造方案.md` §6
+2. 微信支付（JSAPI 下单 + 回调验签 + 幂等）——早期方案未落地，如需重启见 `doc/design/让我做-总设计文档.md` §8 的现状说明
