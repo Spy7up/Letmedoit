@@ -24,6 +24,8 @@ public class AdminSwaggerTagConst extends SwaggerTagConst {
 
         public static final String LETMEDOIT_FEEDBACK = "让我做-小程序反馈";
 
+        public static final String LETMEDOIT_VERSION = "让我做-版本管理";
+
     }
 
 

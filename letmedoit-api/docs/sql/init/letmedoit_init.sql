@@ -956,7 +956,7 @@ CREATE TABLE IF NOT EXISTS `t_code_generator_config` (
 --  2. t_department    1 个「总部」，后台员工必须有归属部门
 --  3. t_position      1 个「普通员工」
 --  4. t_employee      1 个 admin 账号（超级管理员，密码沿用 SmartAdmin 默认 123456）
---  5. t_menu          91 条后台菜单（77 条框架菜单 + 让我做运营 14 条），后台导航的唯一来源，不可删
+--  5. t_menu          96 条后台菜单（77 条框架菜单 + 让我做运营 19 条），后台导航的唯一来源，不可删
 --  6. t_dict          6 本业务字典（任务 4 本 + 反馈 2 本）
 --  7. t_dict_data     30 条字典项，小程序状态/类型文案从这张表读
 --  8. t_smart_job     1 个定时作业（任务到点生效与到期提醒，每分钟）
@@ -998,7 +998,7 @@ INSERT INTO `t_employee` (`employee_uid`, `login_name`, `login_pwd`, `actual_nam
 ('cf1e361fd46741f5b2a09335cef50db8', 'admin', '$argon2id$v=19$m=16384,t=2,p=1$d9yQEAhck+haKxP2ZtXocg$NEnw3D2Ly8UbYpy2odATLA4ZflZ1FKJjWCuOGrVE4PM', '管理员', NULL, 0, '13500000000', 1, 1, NULL, 0, 0, 1, NULL, '2026-01-01 00:00:00', '2026-01-01 00:00:00');
 
 -- ----------------------------------------------------------------------------
---  5. 后台菜单（91 条，整棵树，勿手工删减；其中让我做运营 14 条见下 5.1，演示与文档中心菜单已下线）
+--  5. 后台菜单（96 条，整棵树，勿手工删减；其中让我做运营 19 条见下 5.1，演示与文档中心菜单已下线）
 -- ----------------------------------------------------------------------------
 -- 后台左侧导航、按钮权限（api_perms / web_perms）全部来自这张表。
 -- 删了对应菜单，后台页面会 404 或按钮消失。
@@ -1105,8 +1105,8 @@ INSERT INTO `t_menu` (`menu_id`, `menu_name`, `menu_type`, `parent_id`, `sort`, 
 -- ----------------------------------------------------------------------------
 
 -- ----------------------------------------------------------------------------
---  5.1 让我做运营菜单（来源 updates/2026-10-29/01_admin_menu.sql，14 条）
---  1 个目录 + 7 个页面（会员详情 / 任务详情 visible_flag=0 隐藏）+ 6 个按钮权限点
+--  5.1 让我做运营菜单（2026-10-29 基础菜单 + 2026-10-30 版本管理，共 19 条）
+--  1 个目录 + 8 个页面（会员详情 / 任务详情 visible_flag=0 隐藏）+ 10 个按钮权限点
 --  同样用 path 查父级、NOT EXISTS 兜底，重复导入不会产生重复菜单
 --  演示与文档中心菜单已在 updates/2026-10-29/02_remove_demo_menu.sql 中下线
 -- ----------------------------------------------------------------------------
@@ -1169,6 +1169,13 @@ INSERT INTO `t_menu` (`menu_name`, `menu_type`, `parent_id`, `sort`, `path`, `co
                        `api_perms`, `web_perms`, `icon`, `context_menu_id`, `frame_flag`, `frame_url`,
                        `cache_flag`, `visible_flag`, `disabled_flag`, `deleted_flag`,
                        `create_user_id`, `create_time`, `update_user_id`, `update_time`)
+SELECT '版本管理', 2, p.menu_id, 8, '/letmedoit/version', '/business/letmedoit/version/version-list.vue', NULL, NULL, NULL, 'DeploymentUnitOutlined', NULL, 0, NULL, 0, 1, 0, 0, 1, NOW(), NULL, NOW()
+FROM (SELECT menu_id FROM `t_menu` WHERE `path` = '/letmedoit' AND `deleted_flag` = 0 LIMIT 1) p
+WHERE NOT EXISTS (SELECT 1 FROM (SELECT menu_id FROM `t_menu` WHERE `path` = '/letmedoit/version' AND `deleted_flag` = 0 LIMIT 1) tmp);
+INSERT INTO `t_menu` (`menu_name`, `menu_type`, `parent_id`, `sort`, `path`, `component`, `perms_type`,
+                       `api_perms`, `web_perms`, `icon`, `context_menu_id`, `frame_flag`, `frame_url`,
+                       `cache_flag`, `visible_flag`, `disabled_flag`, `deleted_flag`,
+                       `create_user_id`, `create_time`, `update_user_id`, `update_time`)
 SELECT '概览查询', 3, c.menu_id, NULL, NULL, NULL, 1, 'dashboard:query', 'dashboard:query', NULL, c.menu_id, 0, NULL, 0, 1, 0, 0, 1, NOW(), NULL, NOW()
 FROM (SELECT menu_id FROM `t_menu` WHERE `path` = '/letmedoit/dashboard' AND `deleted_flag` = 0 LIMIT 1) c
 WHERE NOT EXISTS (SELECT 1 FROM (SELECT menu_id FROM `t_menu` WHERE `api_perms` = 'dashboard:query' AND `deleted_flag` = 0 LIMIT 1) tmp);
@@ -1207,6 +1214,34 @@ INSERT INTO `t_menu` (`menu_name`, `menu_type`, `parent_id`, `sort`, `path`, `co
 SELECT '反馈处理', 3, c.menu_id, NULL, NULL, NULL, 1, 'appFeedback:reply', 'appFeedback:reply', NULL, c.menu_id, 0, NULL, 0, 1, 0, 0, 1, NOW(), NULL, NOW()
 FROM (SELECT menu_id FROM `t_menu` WHERE `path` = '/letmedoit/feedback' AND `deleted_flag` = 0 LIMIT 1) c
 WHERE NOT EXISTS (SELECT 1 FROM (SELECT menu_id FROM `t_menu` WHERE `api_perms` = 'appFeedback:reply' AND `deleted_flag` = 0 LIMIT 1) tmp);
+INSERT INTO `t_menu` (`menu_name`, `menu_type`, `parent_id`, `sort`, `path`, `component`, `perms_type`,
+                       `api_perms`, `web_perms`, `icon`, `context_menu_id`, `frame_flag`, `frame_url`,
+                       `cache_flag`, `visible_flag`, `disabled_flag`, `deleted_flag`,
+                       `create_user_id`, `create_time`, `update_user_id`, `update_time`)
+SELECT '版本查询', 3, c.menu_id, NULL, NULL, NULL, 1, 'appVersion:query', 'appVersion:query', NULL, c.menu_id, 0, NULL, 0, 1, 0, 0, 1, NOW(), NULL, NOW()
+FROM (SELECT menu_id FROM `t_menu` WHERE `path` = '/letmedoit/version' AND `deleted_flag` = 0 LIMIT 1) c
+WHERE NOT EXISTS (SELECT 1 FROM (SELECT menu_id FROM `t_menu` WHERE `api_perms` = 'appVersion:query' AND `deleted_flag` = 0 LIMIT 1) tmp);
+INSERT INTO `t_menu` (`menu_name`, `menu_type`, `parent_id`, `sort`, `path`, `component`, `perms_type`,
+                       `api_perms`, `web_perms`, `icon`, `context_menu_id`, `frame_flag`, `frame_url`,
+                       `cache_flag`, `visible_flag`, `disabled_flag`, `deleted_flag`,
+                       `create_user_id`, `create_time`, `update_user_id`, `update_time`)
+SELECT '版本新增', 3, c.menu_id, NULL, NULL, NULL, 1, 'appVersion:add', 'appVersion:add', NULL, c.menu_id, 0, NULL, 0, 1, 0, 0, 1, NOW(), NULL, NOW()
+FROM (SELECT menu_id FROM `t_menu` WHERE `path` = '/letmedoit/version' AND `deleted_flag` = 0 LIMIT 1) c
+WHERE NOT EXISTS (SELECT 1 FROM (SELECT menu_id FROM `t_menu` WHERE `api_perms` = 'appVersion:add' AND `deleted_flag` = 0 LIMIT 1) tmp);
+INSERT INTO `t_menu` (`menu_name`, `menu_type`, `parent_id`, `sort`, `path`, `component`, `perms_type`,
+                       `api_perms`, `web_perms`, `icon`, `context_menu_id`, `frame_flag`, `frame_url`,
+                       `cache_flag`, `visible_flag`, `disabled_flag`, `deleted_flag`,
+                       `create_user_id`, `create_time`, `update_user_id`, `update_time`)
+SELECT '版本修改', 3, c.menu_id, NULL, NULL, NULL, 1, 'appVersion:update', 'appVersion:update', NULL, c.menu_id, 0, NULL, 0, 1, 0, 0, 1, NOW(), NULL, NOW()
+FROM (SELECT menu_id FROM `t_menu` WHERE `path` = '/letmedoit/version' AND `deleted_flag` = 0 LIMIT 1) c
+WHERE NOT EXISTS (SELECT 1 FROM (SELECT menu_id FROM `t_menu` WHERE `api_perms` = 'appVersion:update' AND `deleted_flag` = 0 LIMIT 1) tmp);
+INSERT INTO `t_menu` (`menu_name`, `menu_type`, `parent_id`, `sort`, `path`, `component`, `perms_type`,
+                       `api_perms`, `web_perms`, `icon`, `context_menu_id`, `frame_flag`, `frame_url`,
+                       `cache_flag`, `visible_flag`, `disabled_flag`, `deleted_flag`,
+                       `create_user_id`, `create_time`, `update_user_id`, `update_time`)
+SELECT '版本发布', 3, c.menu_id, NULL, NULL, NULL, 1, 'appVersion:publish', 'appVersion:publish', NULL, c.menu_id, 0, NULL, 0, 1, 0, 0, 1, NOW(), NULL, NOW()
+FROM (SELECT menu_id FROM `t_menu` WHERE `path` = '/letmedoit/version' AND `deleted_flag` = 0 LIMIT 1) c
+WHERE NOT EXISTS (SELECT 1 FROM (SELECT menu_id FROM `t_menu` WHERE `api_perms` = 'appVersion:publish' AND `deleted_flag` = 0 LIMIT 1) tmp);
 
 --  6~7. 业务字典
 -- ----------------------------------------------------------------------------
@@ -1640,7 +1675,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- 8) 后台账号唯一
 -- SELECT employee_id, login_name, administrator_flag FROM t_employee;
 --
--- 9) 后台菜单 91 条（77 条框架菜单 + 14 条让我做运营；其中 2 条为隐藏详情页、3 条历史停用）
+-- 9) 后台菜单 96 条（77 条框架菜单 + 19 条让我做运营；其中 2 条为隐藏详情页、3 条历史停用）
 -- SELECT COUNT(*) FROM t_menu WHERE deleted_flag = 0;
 --
 -- 10) 导完字典后重启一次服务（或清 Redis 的 dict 缓存），确保字典缓存重建。

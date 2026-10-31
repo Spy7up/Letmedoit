@@ -40,6 +40,7 @@ export const TABLE_ID_CONST = {
       HELPER: businessLetmedoitInitTableId + 2, //帮手关系
       TASK: businessLetmedoitInitTableId + 3, //任务报表
       FEEDBACK: businessLetmedoitInitTableId + 4, //小程序反馈
+      VERSION: businessLetmedoitInitTableId + 5, //版本管理
     },
   },
 

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.business.version.dao.AppVersionDao">
+
+    <sql id="baseColumns">
+        version_id, app_type, version, version_label, release_note, release_time,
+        min_base_lib, force_update_flag, current_flag, deleted_flag, create_time, update_time
+    </sql>
+
+    <sql id="voColumns">
+        version_id AS versionId,
+        app_type AS appType,
+        version,
+        version_label AS versionLabel,
+        release_note AS releaseNote,
+        release_time AS releaseTime,
+        min_base_lib AS minBaseLib,
+        force_update_flag AS forceUpdateFlag,
+        current_flag AS currentFlag,
+        create_time AS createTime,
+        update_time AS updateTime
+    </sql>
+
+    <select id="queryPage" resultType="net.lab1024.sa.admin.module.business.version.domain.vo.AppVersionVO">
+        SELECT
+        <include refid="voColumns"/>
+        FROM t_app_version
+        <where>
+            deleted_flag = 0
+            <if test="query.appType != null and query.appType != ''">
+                AND app_type = #{query.appType}
+            </if>
+            <if test="query.version != null and query.version != ''">
+                AND version LIKE CONCAT('%', #{query.version}, '%')
+            </if>
+            <if test="query.currentFlag != null">
+                AND current_flag = #{query.currentFlag}
+            </if>
+            <if test="query.beginDate != null">
+                AND release_time &gt;= #{query.beginDate}
+            </if>
+            <if test="query.endDate != null">
+                AND release_time &lt; DATE_ADD(#{query.endDate}, INTERVAL 1 DAY)
+            </if>
+        </where>
+        <if test="query.sortItemList == null or query.sortItemList.size == 0">
+            ORDER BY current_flag DESC, COALESCE(release_time, create_time) DESC, version_id DESC
+        </if>
+    </select>
+
+    <select id="selectNotDeletedById" resultType="net.lab1024.sa.admin.module.business.version.domain.entity.AppVersionEntity">
+        SELECT
+        <include refid="baseColumns"/>
+        FROM t_app_version
+        WHERE version_id = #{versionId}
+          AND deleted_flag = 0
+    </select>
+
+    <select id="selectByTypeAndVersion" resultType="net.lab1024.sa.admin.module.business.version.domain.entity.AppVersionEntity">
+        SELECT
+        <include refid="baseColumns"/>
+        FROM t_app_version
+        WHERE app_type = #{appType}
+          AND version = #{version}
+        LIMIT 1
+    </select>
+
+    <update id="updateInfo" parameterType="net.lab1024.sa.admin.module.business.version.domain.entity.AppVersionEntity">
+        UPDATE t_app_version
+        SET version_label = #{versionLabel,jdbcType=VARCHAR},
+            release_note = #{releaseNote,jdbcType=VARCHAR},
+            release_time = #{releaseTime,jdbcType=TIMESTAMP},
+            min_base_lib = #{minBaseLib,jdbcType=VARCHAR},
+            force_update_flag = #{forceUpdateFlag},
+            update_time = NOW()
+        WHERE version_id = #{versionId}
+          AND deleted_flag = 0
+    </update>
+
+    <update id="clearCurrent">
+        UPDATE t_app_version
+        SET current_flag = 0,
+            update_time = NOW()
+        WHERE app_type = #{appType}
+          AND current_flag = 1
+    </update>
+
+    <update id="publishTarget">
+        UPDATE t_app_version
+        SET current_flag = 1,
+            release_time = COALESCE(release_time, NOW()),
+            update_time = NOW()
+        WHERE version_id = #{versionId}
+          AND app_type = #{appType}
+          AND deleted_flag = 0
+    </update>
+
+</mapper>

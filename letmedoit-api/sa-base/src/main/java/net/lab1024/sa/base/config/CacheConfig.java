@@ -7,7 +7,6 @@ import net.lab1024.sa.base.module.support.cache.CaffeineCacheServiceImpl;
 import net.lab1024.sa.base.module.support.cache.RedisCacheServiceImpl;
 import net.lab1024.sa.base.module.support.redis.CustomRedisCacheManager;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -35,12 +34,17 @@ public class CacheConfig {
     /**
      * 创建自定义Redis缓存管理器Bean 整合spring-cache
      * Redis连接工厂，用于建立与Redis服务器的连接
+     * <p>
+     * 注意：返回类型必须声明为具体类（不能写成接口 CacheManager），
+     * 否则 Spring 按工厂方法声明类型推断 bean 类型，无法满足
+     * {@code @Resource RedisCacheManager} 的按类型注入，启动会报
+     * "required a bean of type RedisCacheManager that could not be found"。
      *
-     * @return CacheManager Redis缓存管理器实例
+     * @return CustomRedisCacheManager Redis缓存管理器实例
      */
     @Bean
     @ConditionalOnProperty(prefix = "spring.cache", name = {"type"}, havingValue = REDIS_CACHE)
-    public CacheManager cacheManager() {
+    public CustomRedisCacheManager cacheManager() {
         // 使用非阻塞模式的缓存写入器，适用于大多数高并发场景
         RedisCacheWriter redisCacheWriter = RedisCacheWriter.nonLockingRedisCacheWriter(redisConnectionFactory);
 
