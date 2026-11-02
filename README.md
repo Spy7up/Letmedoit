@@ -18,7 +18,7 @@
 | 层 | 选型 |
 |---|---|
 | 前端 | 微信小程序原生 WXML/WXSS（基础库 ≥ 2.32.3），自定义悬浮液态玻璃 tabBar |
-| 后端 | SpringBoot 3.5.4 / Java 17，基于 SmartAdmin 3.x 多模块（sa-base / sa-app / sa-admin） |
+| 后端 | SpringBoot 3.5.4 / Java 17，三模块：sa-base 底座 / sa-app 小程序接口 / sa-admin 运营后台 |
 | 鉴权 | Sa-Token 双体系隔离：后台 `Authorization` + 小程序 `App-Token` |
 | 存储 | MySQL 8 + Redis / Redisson（缓存、分布式锁、定时作业互斥） |
 | 对象存储 | 腾讯云 COS（S3 兼容，图片公网可读） |

@@ -1,9 +1,7 @@
 <!--
   * 登录失败锁定
   *
-  * @Author:    1024创新实验室-主任-卓大
-  * @Date:      2023-10-17 18:02:37
-  * @Copyright  1024创新实验室
+  * @author letmedoit
 -->
 <template>
   <!---------- 查询表单form begin ----------->

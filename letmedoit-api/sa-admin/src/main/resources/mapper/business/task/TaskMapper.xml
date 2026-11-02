@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.business.task.dao.TaskDao">
+<mapper namespace="net.letmedoit.sa.admin.module.business.task.dao.TaskDao">
 
     <!-- 任务列 + 参与统计，列表与详情共用 -->
     <sql id="taskColumns">
@@ -31,7 +31,7 @@
         ) p ON p.task_id = t.task_id
     </sql>
 
-    <select id="query" resultType="net.lab1024.sa.admin.module.business.task.domain.vo.TaskVO">
+    <select id="query" resultType="net.letmedoit.sa.admin.module.business.task.domain.vo.TaskVO">
         SELECT
         <include refid="taskColumns"/>
         FROM t_task t
@@ -70,7 +70,7 @@
         </if>
     </select>
 
-    <select id="selectDetail" resultType="net.lab1024.sa.admin.module.business.task.domain.vo.TaskDetailVO">
+    <select id="selectDetail" resultType="net.letmedoit.sa.admin.module.business.task.domain.vo.TaskDetailVO">
         SELECT
         <include refid="taskColumns"/>,
         c.avatar AS creatorAvatar,
@@ -86,7 +86,7 @@
         WHERE t.deleted_flag = 0 AND t.task_id = #{taskId}
     </select>
 
-    <select id="selectParticipantList" resultType="net.lab1024.sa.admin.module.business.task.domain.vo.TaskParticipantVO">
+    <select id="selectParticipantList" resultType="net.letmedoit.sa.admin.module.business.task.domain.vo.TaskParticipantVO">
         SELECT p.participant_id AS participantId,
                p.member_id AS memberId,
                m.nickname,
@@ -108,7 +108,7 @@
         ORDER BY p.participant_id ASC
     </select>
 
-    <select id="selectEventList" resultType="net.lab1024.sa.admin.module.business.task.domain.vo.TaskEventVO">
+    <select id="selectEventList" resultType="net.letmedoit.sa.admin.module.business.task.domain.vo.TaskEventVO">
         SELECT e.event_id AS eventId,
                e.event_type AS eventType,
                e.content,

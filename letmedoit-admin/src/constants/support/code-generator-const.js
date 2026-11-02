@@ -1,11 +1,7 @@
 /*
  * 代码生成 枚举
  *
- * @Author:    1024创新实验室-主任：卓大
- * @Date:      2022-09-03 22:09:10
- * @Wechat:    zhuda1024
- * @Email:     lab1024@163.com
- * @Copyright  1024创新实验室 （ https://1024lab.net ），Since 2012
+ * @author letmedoit
  */
 
 // 前端组件类型

@@ -1,11 +1,7 @@
 /*
  * 登录日志
  *
- * @Author:    1024创新实验室-主任：卓大
- * @Date:      2022-09-03 22:08:45
- * @Wechat:    zhuda1024
- * @Email:     lab1024@163.com
- * @Copyright  1024创新实验室 （ https://1024lab.net ），Since 2012
+ * @author letmedoit
  */
 export const LOGIN_RESULT_ENUM = {
   LOGIN_SUCCESS: {

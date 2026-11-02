@@ -1,16 +1,15 @@
 {
-  "name": "smartadmin",
+  "name": "letmedoit-admin",
   "version": "3.0.0",
   "author": {
-    "name": "1024创新实验室（1024lab）",
-    "email": "lab1024@163.com",
-    "url": "https://www.1024lab.net"
+    "name": "letmedoit"
   },
+  "private": true,
   "license": "MIT",
-  "homepage": "https://smartadmin.1024lab.net",
   "scripts": {
     "localhost": "vite --mode localhost",
     "dev": "vite",
+    "build:dev": "vite build --mode development",
     "build:test": "vite build  --base=/admin/ --mode test",
     "build:pre": "vite build  --mode pre",
     "build:prod": "vite build  --mode production"
@@ -66,9 +65,5 @@
   },
   "engines": {
     "node": ">=18"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/1024-lab/smart-admin.git"
   }
 }

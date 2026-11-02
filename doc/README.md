@@ -8,7 +8,7 @@
 | 管理后台开发技术规范 | [`design/管理后台开发技术规范.md`](./design/管理后台开发技术规范.md) | 后台技术边界、分层规范、指标口径、接口与页面清单 |
 | 高保真原型 | [`prototype/index.html`](./prototype/index.html) | 按功能模块拆分，浏览器打开导航页挑选 |
 | 小程序开发规范（AI Agent） | [`../letmedoit-miniprogram/docs/AI-Agent-小程序开发规范.md`](../letmedoit-miniprogram/docs/AI-Agent-小程序开发规范.md) | 前端分层铁律、硬约束、设计要求 |
-| 后端开发规范（AI Agent） | [`../letmedoit-api/docs/AI-Agent-后端开发规范.md`](../letmedoit-api/docs/AI-Agent-后端开发规范.md) | SmartAdmin 分层规范、硬约束、自检清单 |
+| 后端开发规范（AI Agent） | [`../letmedoit-api/docs/AI-Agent-后端开发规范.md`](../letmedoit-api/docs/AI-Agent-后端开发规范.md) | 分层规范、硬约束、自检清单 |
 | 数据库脚本规则 | [`../letmedoit-api/docs/sql/README.md`](../letmedoit-api/docs/sql/README.md) | 改库前必读 |
 | 协议内容管理 | [`../letmedoit-api/docs/AGREEMENT.md`](../letmedoit-api/docs/AGREEMENT.md) | `t_app_agreement` 运营规则 |
 | 内容安全 | [`../letmedoit-api/docs/CONTENT_SECURITY.md`](../letmedoit-api/docs/CONTENT_SECURITY.md) | 文本/图片检测链路 |

@@ -1,11 +1,7 @@
 /*
  * 所有常量入口
  *
- * @Author:    1024创新实验室-主任：卓大
- * @Date:      2022-09-06 19:58:28
- * @Wechat:    zhuda1024
- * @Email:     lab1024@163.com
- * @Copyright  1024创新实验室 （ https://1024lab.net ），Since 2012
+ * @author letmedoit
  */
 import menu from './system/menu-const';
 import { LOGIN_DEVICE_ENUM } from './system/login-device-const';

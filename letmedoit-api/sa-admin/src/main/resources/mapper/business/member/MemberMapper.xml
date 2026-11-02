@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.business.member.dao.MemberDao">
+<mapper namespace="net.letmedoit.sa.admin.module.business.member.dao.MemberDao">
 
     <!-- 会员指标列：与列表、详情共用，改口径只改这里 -->
     <sql id="metricColumns">
@@ -37,7 +37,7 @@
         ) pc ON pc.memberId = m.member_id
     </sql>
 
-    <select id="query" resultType="net.lab1024.sa.admin.module.business.member.domain.vo.MemberVO">
+    <select id="query" resultType="net.letmedoit.sa.admin.module.business.member.domain.vo.MemberVO">
         SELECT
         <include refid="metricColumns"/>
         FROM t_wx_member m
@@ -66,7 +66,7 @@
         </if>
     </select>
 
-    <select id="selectDetail" resultType="net.lab1024.sa.admin.module.business.member.domain.vo.MemberDetailVO">
+    <select id="selectDetail" resultType="net.letmedoit.sa.admin.module.business.member.domain.vo.MemberDetailVO">
         SELECT
         <include refid="metricColumns"/>
         FROM t_wx_member m
@@ -74,7 +74,7 @@
         WHERE m.deleted_flag = 0 AND m.member_id = #{memberId}
     </select>
 
-    <select id="selectHelperList" resultType="net.lab1024.sa.admin.module.business.member.domain.vo.MemberHelperVO">
+    <select id="selectHelperList" resultType="net.letmedoit.sa.admin.module.business.member.domain.vo.MemberHelperVO">
         SELECT h.helper_member_id AS helperMemberId,
                hm.nickname,
                hm.avatar,
@@ -88,7 +88,7 @@
         LIMIT 50
     </select>
 
-    <select id="selectTaskList" resultType="net.lab1024.sa.admin.module.business.member.domain.vo.MemberTaskVO">
+    <select id="selectTaskList" resultType="net.letmedoit.sa.admin.module.business.member.domain.vo.MemberTaskVO">
         SELECT * FROM (
             SELECT t.task_id AS taskId,
                    t.title,
@@ -120,7 +120,7 @@
         LIMIT 20
     </select>
 
-    <select id="selectDayStat" resultType="net.lab1024.sa.admin.module.business.member.domain.vo.MemberDayStatVO">
+    <select id="selectDayStat" resultType="net.letmedoit.sa.admin.module.business.member.domain.vo.MemberDayStatVO">
         SELECT DATE_FORMAT(p.complete_time, '%Y-%m-%d') AS statDate,
                COUNT(*) AS completedCount,
                SUM(CASE WHEN p.complete_time &lt;= t.deadline THEN 1 ELSE 0 END) AS onTimeCount

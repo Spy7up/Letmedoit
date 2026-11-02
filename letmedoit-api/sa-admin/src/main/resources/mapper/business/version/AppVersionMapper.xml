@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.business.version.dao.AppVersionDao">
+<mapper namespace="net.letmedoit.sa.admin.module.business.version.dao.AppVersionDao">
 
     <sql id="baseColumns">
         version_id, app_type, version, version_label, release_note, release_time,
@@ -21,7 +21,7 @@
         update_time AS updateTime
     </sql>
 
-    <select id="queryPage" resultType="net.lab1024.sa.admin.module.business.version.domain.vo.AppVersionVO">
+    <select id="queryPage" resultType="net.letmedoit.sa.admin.module.business.version.domain.vo.AppVersionVO">
         SELECT
         <include refid="voColumns"/>
         FROM t_app_version
@@ -48,7 +48,7 @@
         </if>
     </select>
 
-    <select id="selectNotDeletedById" resultType="net.lab1024.sa.admin.module.business.version.domain.entity.AppVersionEntity">
+    <select id="selectNotDeletedById" resultType="net.letmedoit.sa.admin.module.business.version.domain.entity.AppVersionEntity">
         SELECT
         <include refid="baseColumns"/>
         FROM t_app_version
@@ -56,7 +56,7 @@
           AND deleted_flag = 0
     </select>
 
-    <select id="selectByTypeAndVersion" resultType="net.lab1024.sa.admin.module.business.version.domain.entity.AppVersionEntity">
+    <select id="selectByTypeAndVersion" resultType="net.letmedoit.sa.admin.module.business.version.domain.entity.AppVersionEntity">
         SELECT
         <include refid="baseColumns"/>
         FROM t_app_version
@@ -65,7 +65,7 @@
         LIMIT 1
     </select>
 
-    <update id="updateInfo" parameterType="net.lab1024.sa.admin.module.business.version.domain.entity.AppVersionEntity">
+    <update id="updateInfo" parameterType="net.letmedoit.sa.admin.module.business.version.domain.entity.AppVersionEntity">
         UPDATE t_app_version
         SET version_label = #{versionLabel,jdbcType=VARCHAR},
             release_note = #{releaseNote,jdbcType=VARCHAR},

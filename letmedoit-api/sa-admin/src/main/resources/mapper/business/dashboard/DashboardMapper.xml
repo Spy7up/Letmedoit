@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.business.dashboard.dao.DashboardDao">
+<mapper namespace="net.letmedoit.sa.admin.module.business.dashboard.dao.DashboardDao">
 
-    <select id="selectOverview" resultType="net.lab1024.sa.admin.module.business.dashboard.domain.vo.DashboardOverviewVO">
+    <select id="selectOverview" resultType="net.letmedoit.sa.admin.module.business.dashboard.domain.vo.DashboardOverviewVO">
         SELECT
             (SELECT COUNT(*) FROM t_wx_member WHERE deleted_flag = 0) AS memberCount,
             (SELECT COUNT(*) FROM t_wx_member WHERE deleted_flag = 0
@@ -21,7 +21,7 @@
             (SELECT COUNT(*) FROM t_app_feedback WHERE deleted_flag = 0 AND status = 0) AS pendingFeedbackCount
     </select>
 
-    <select id="selectTaskStatusList" resultType="net.lab1024.sa.admin.module.business.dashboard.domain.vo.DashboardTaskStatusVO">
+    <select id="selectTaskStatusList" resultType="net.letmedoit.sa.admin.module.business.dashboard.domain.vo.DashboardTaskStatusVO">
         SELECT status, COUNT(*) AS count
         FROM t_task
         WHERE deleted_flag = 0
@@ -29,7 +29,7 @@
         ORDER BY status
     </select>
 
-    <select id="selectRecentMemberList" resultType="net.lab1024.sa.admin.module.business.dashboard.domain.vo.DashboardRecentMemberVO">
+    <select id="selectRecentMemberList" resultType="net.letmedoit.sa.admin.module.business.dashboard.domain.vo.DashboardRecentMemberVO">
         SELECT member_id AS memberId, nickname, avatar, create_time AS createTime, last_login_time AS lastLoginTime
         FROM t_wx_member
         WHERE deleted_flag = 0
@@ -37,7 +37,7 @@
         LIMIT 6
     </select>
 
-    <select id="selectMemberTrend" resultType="net.lab1024.sa.admin.module.business.dashboard.domain.vo.DashboardTrendItemVO">
+    <select id="selectMemberTrend" resultType="net.letmedoit.sa.admin.module.business.dashboard.domain.vo.DashboardTrendItemVO">
         SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS statDate, COUNT(*) AS count
         FROM t_wx_member
         WHERE deleted_flag = 0
@@ -47,7 +47,7 @@
         ORDER BY DATE(create_time)
     </select>
 
-    <select id="selectTaskTrend" resultType="net.lab1024.sa.admin.module.business.dashboard.domain.vo.DashboardTrendItemVO">
+    <select id="selectTaskTrend" resultType="net.letmedoit.sa.admin.module.business.dashboard.domain.vo.DashboardTrendItemVO">
         SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS statDate, COUNT(*) AS count
         FROM t_task
         WHERE deleted_flag = 0
@@ -57,7 +57,7 @@
         ORDER BY DATE(create_time)
     </select>
 
-    <select id="selectCompletedTrend" resultType="net.lab1024.sa.admin.module.business.dashboard.domain.vo.DashboardTrendItemVO">
+    <select id="selectCompletedTrend" resultType="net.letmedoit.sa.admin.module.business.dashboard.domain.vo.DashboardTrendItemVO">
         SELECT DATE_FORMAT(p.complete_time, '%Y-%m-%d') AS statDate, COUNT(*) AS count
         FROM t_task_participant p
         INNER JOIN t_task t ON t.task_id = p.task_id AND t.deleted_flag = 0

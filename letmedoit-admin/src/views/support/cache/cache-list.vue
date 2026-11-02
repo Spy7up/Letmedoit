@@ -1,11 +1,7 @@
 <!--
   * 缓存
   *
-  * @Author:    1024创新实验室-主任：卓大
-  * @Date:      2022-06-08 21:50:41
-  * @Wechat:    zhuda1024
-  * @Email:     lab1024@163.com
-  * @Copyright  1024创新实验室 （ https://1024lab.net ），Since 2012
+  * @author letmedoit
 -->
 <template>
   <a-card size="small" :bordered="false" :hoverable="true">
@@ -15,7 +11,7 @@
       </template>
       <template v-slot:description>
         <pre>
-简介：SmartAdmin使用的是SpringCache进行管理缓存，SpringCache有多种实现方式，本项目默认采用的是caffeine。
+简介：本后台使用 SpringCache 管理缓存，SpringCache 有多种实现方式，本项目默认采用的是 caffeine。
 Caffeine ：
 - Caffeine是一个进程内部缓存框架，使用了Java 8最新的[StampedLock]乐观锁技术，极大提高缓存并发吞吐量，一个高性能的 Java 缓存库，被称为最快缓存。
 其他：

@@ -1,11 +1,7 @@
 /*
  * 首页路由
  *
- * @Author:    1024创新实验室-主任：卓大
- * @Date:      2022-09-06 20:51:41
- * @Wechat:    zhuda1024
- * @Email:     lab1024@163.com
- * @Copyright  1024创新实验室 （ https://1024lab.net ），Since 2012
+ * @author letmedoit
  */
 import { HOME_PAGE_NAME, HOME_REDIRECT_PATH } from '/@/constants/system/home-const';
 import { MENU_TYPE_ENUM } from '/@/constants/system/menu-const';
@@ -25,7 +21,7 @@ export const homeRouters = [
     children: [
       {
         /**
-         * 首页不再使用 SmartAdmin 演示页（views/system/home），直接落到「让我做 · 运营概览」。
+         * 首页不再使用框架自带演示页（views/system/home），直接落到「让我做 · 运营概览」。
          * 保留 name=Home，是为了 logo 点击、标签页回首页等 router.push({ name: HOME_PAGE_NAME }) 的调用不出错。
          * 运营概览是动态菜单路由，登录时由 buildRoutes 注册，所以这里只能用 path 重定向。
          */

@@ -1,6 +1,6 @@
 # letmedoit-api · 后端
 
-「让我做」后端服务（SpringBoot 3.5.4 / Java 17），基于 SmartAdmin 3.x 多模块骨架。项目整体介绍见[根目录 README](../README.md)，业务与接口设计见 [`doc/design/让我做-总设计文档.md`](../doc/design/让我做-总设计文档.md)。
+「让我做」后端服务（SpringBoot 3.5.4 / Java 17），三个模块：`sa-base` 公共底座、`sa-admin` 运营后台、`sa-app` 小程序接口。项目整体介绍见[根目录 README](../README.md)，业务与接口设计见 [`doc/design/让我做-总设计文档.md`](../doc/design/让我做-总设计文档.md)。
 
 ## 开发现状
 

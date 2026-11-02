@@ -1,0 +1,54 @@
+package net.letmedoit.sa.admin.module.system.message;
+
+import cn.dev33.satoken.annotation.SaCheckPermission;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import net.letmedoit.sa.admin.constant.AdminSwaggerTagConst;
+import net.letmedoit.sa.base.common.domain.PageResult;
+import net.letmedoit.sa.base.common.domain.ResponseDTO;
+import net.letmedoit.sa.base.common.domain.ValidateList;
+import net.letmedoit.sa.base.module.support.message.domain.MessageQueryForm;
+import net.letmedoit.sa.base.module.support.message.domain.MessageSendForm;
+import net.letmedoit.sa.base.module.support.message.domain.MessageVO;
+import net.letmedoit.sa.base.module.support.message.service.MessageService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+
+/**
+ * 后管 消息路由
+ *
+ * @author letmedoit
+ * @date: 2025/04/09 20:55
+ */
+@Tag(name = AdminSwaggerTagConst.System.SYSTEM_MESSAGE)
+@RestController
+public class AdminMessageController {
+
+    @Autowired
+    private MessageService messageService;
+
+    @Operation(summary = "通知消息-新建")
+    @PostMapping("/message/sendMessages")
+    @SaCheckPermission("system:message:send")
+    public ResponseDTO<String> sendMessages(@RequestBody @Valid ValidateList<MessageSendForm> messageList) {
+        messageService.sendMessage(messageList);
+        return ResponseDTO.ok();
+    }
+
+    @Operation(summary = "通知消息-分页查询")
+    @PostMapping("/message/query")
+    @SaCheckPermission("system:message:query")
+    public ResponseDTO<PageResult<MessageVO>> query(@RequestBody @Valid MessageQueryForm queryForm) {
+        return ResponseDTO.ok(messageService.query(queryForm));
+    }
+
+    @Operation(summary = "通知消息-删除")
+    @GetMapping("/message/delete/{messageId}")
+    @SaCheckPermission("system:message:delete")
+    public ResponseDTO<String> delete(@PathVariable Long messageId) {
+        return messageService.delete(messageId);
+    }
+
+}

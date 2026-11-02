@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.business.feedback.dao.AppFeedbackDao">
+<mapper namespace="net.letmedoit.sa.admin.module.business.feedback.dao.AppFeedbackDao">
 
     <sql id="columns">
         f.feedback_id AS feedbackId,
@@ -19,7 +19,7 @@
         f.create_time AS createTime
     </sql>
 
-    <select id="query" resultType="net.lab1024.sa.admin.module.business.feedback.domain.vo.AppFeedbackVO">
+    <select id="query" resultType="net.letmedoit.sa.admin.module.business.feedback.domain.vo.AppFeedbackVO">
         SELECT
         <include refid="columns"/>
         FROM t_app_feedback f
@@ -55,7 +55,7 @@
         </if>
     </select>
 
-    <select id="selectDetail" resultType="net.lab1024.sa.admin.module.business.feedback.domain.vo.AppFeedbackVO">
+    <select id="selectDetail" resultType="net.letmedoit.sa.admin.module.business.feedback.domain.vo.AppFeedbackVO">
         SELECT
         <include refid="columns"/>
         FROM t_app_feedback f

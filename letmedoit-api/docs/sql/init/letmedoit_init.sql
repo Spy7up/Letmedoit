@@ -112,8 +112,8 @@ CREATE TABLE IF NOT EXISTS `t_wx_member` (
   `disabled_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否禁用 0否 1是',
   `deleted_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否删除 0否 1是',
   `last_login_time` datetime DEFAULT NULL COMMENT '最后登录时间',
-  `create_time` datetime NOT NULL COMMENT '创建时间',
-  `update_time` datetime NOT NULL COMMENT '更新时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`member_id`),
   UNIQUE KEY `uk_open_id` (`open_id`),
   UNIQUE KEY `uk_invite_code` (`invite_code`),
@@ -130,8 +130,8 @@ CREATE TABLE IF NOT EXISTS `t_helper` (
   `helper_member_id` bigint(20) unsigned NOT NULL COMMENT '帮手会员ID',
   `remark` varchar(64) DEFAULT NULL COMMENT '备注名（覆盖对方昵称展示）',
   `deleted_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否删除 0否 1是',
-  `create_time` datetime NOT NULL COMMENT '创建时间',
-  `update_time` datetime NOT NULL COMMENT '更新时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`helper_id`),
   UNIQUE KEY `uk_member_helper` (`member_id`,`helper_member_id`),
   KEY `idx_helper_member` (`helper_member_id`)
@@ -147,8 +147,8 @@ CREATE TABLE IF NOT EXISTS `t_helper_request` (
   `apply_message` varchar(100) DEFAULT NULL COMMENT '附言',
   `status` tinyint(4) NOT NULL DEFAULT 0 COMMENT '状态 0待处理 1已同意 2已拒绝',
   `deleted_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否删除 0否 1是',
-  `create_time` datetime NOT NULL COMMENT '创建时间',
-  `update_time` datetime NOT NULL COMMENT '更新时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`request_id`),
   KEY `idx_to_status` (`to_member_id`,`status`),
   KEY `idx_from_status` (`from_member_id`,`status`)
@@ -172,8 +172,8 @@ CREATE TABLE IF NOT EXISTS `t_content_check` (
   `label`         int(11)          DEFAULT NULL COMMENT '命中标签 100正常 20001时政 20002色情 20006违法 21000其他',
   `suggest`       varchar(16)      DEFAULT NULL COMMENT '微信建议 pass/review/risky',
   `err_msg`       varchar(255)     DEFAULT NULL COMMENT '错误信息',
-  `create_time`   datetime         NOT NULL COMMENT '创建时间',
-  `update_time`   datetime         NOT NULL COMMENT '更新时间',
+  `create_time`   datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time`   datetime         NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`check_id`),
   KEY `idx_trace` (`trace_id`),
   KEY `idx_status_time` (`status`, `create_time`),
@@ -192,8 +192,8 @@ CREATE TABLE IF NOT EXISTS `t_app_agreement` (
   `content`        mediumtext   NOT NULL COMMENT '正文，纯文本（# 开头为标题行）',
   `effective_time` datetime     NOT NULL COMMENT '生效时间',
   `enabled_flag`   tinyint(1)   NOT NULL DEFAULT 1 COMMENT '是否启用 1启用 0停用',
-  `create_time`    datetime     NOT NULL COMMENT '创建时间',
-  `update_time`    datetime     NOT NULL COMMENT '更新时间',
+  `create_time`    datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time`    datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`agreement_id`),
   KEY `idx_type_enabled` (`type`, `enabled_flag`, `effective_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户协议与隐私政策';
@@ -206,7 +206,7 @@ CREATE TABLE IF NOT EXISTS `t_app_agreement_record` (
   `agree_time`     datetime     NOT NULL COMMENT '同意时间',
   `ip`             varchar(64)  DEFAULT NULL COMMENT '同意时的IP',
   `user_agent`     varchar(255) DEFAULT NULL COMMENT '同意时的客户端标识',
-  `create_time`    datetime     NOT NULL COMMENT '创建时间',
+  `create_time`    datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`record_id`),
   UNIQUE KEY `uk_member_type_version` (`member_id`, `agreement_type`, `version`),
   KEY `idx_member` (`member_id`)
@@ -229,8 +229,8 @@ CREATE TABLE IF NOT EXISTS `t_app_feedback` (
   `reply_member_id` bigint(20) unsigned DEFAULT NULL COMMENT '处理人（后台员工ID）',
   `reply_time`      datetime     DEFAULT NULL COMMENT '回复时间',
   `deleted_flag`    tinyint(1)   NOT NULL DEFAULT 0 COMMENT '是否删除 0否 1是',
-  `create_time`     datetime     NOT NULL COMMENT '创建时间',
-  `update_time`     datetime     NOT NULL COMMENT '更新时间',
+  `create_time`     datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time`     datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`feedback_id`),
   KEY `idx_status_time` (`status`, `create_time`),
   KEY `idx_type_time` (`type`, `create_time`),
@@ -254,8 +254,8 @@ CREATE TABLE IF NOT EXISTS `t_app_version` (
   `force_update_flag` tinyint(1)   NOT NULL DEFAULT 0 COMMENT '是否强制更新 0否 1是（预留，前端暂不读）',
   `current_flag`      tinyint(1)   NOT NULL DEFAULT 0 COMMENT '是否当前对外版本 0否 1是，同一端只应有一行为1',
   `deleted_flag`      tinyint(1)   NOT NULL DEFAULT 0 COMMENT '是否删除 0否 1是',
-  `create_time`       datetime     NOT NULL COMMENT '创建时间',
-  `update_time`       datetime     NOT NULL COMMENT '更新时间',
+  `create_time`       datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time`       datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`version_id`),
   UNIQUE KEY `uk_type_version` (`app_type`, `version`),
   KEY `idx_type_current` (`app_type`, `current_flag`)
@@ -280,8 +280,8 @@ CREATE TABLE IF NOT EXISTS `t_task` (
   `edit_count` int(11) NOT NULL DEFAULT 0 COMMENT '编辑次数（进行中只允许改一次）',
   `last_remind_time` datetime DEFAULT NULL COMMENT '最后一次催办时间（限频用）',
   `deleted_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否删除 0否 1是',
-  `create_time` datetime NOT NULL COMMENT '创建时间',
-  `update_time` datetime NOT NULL COMMENT '更新时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`task_id`),
   KEY `idx_creator_status` (`creator_id`,`status`),
   KEY `idx_status_deadline` (`status`,`deadline`),
@@ -301,8 +301,8 @@ CREATE TABLE IF NOT EXISTS `t_task_participant` (
   `complete_images` varchar(2000) DEFAULT NULL COMMENT '凭证图片URL，JSON数组字符串，最多3张',
   `reject_reason` varchar(200) DEFAULT NULL COMMENT '拒绝理由',
   `deleted_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否删除 0否 1是',
-  `create_time` datetime NOT NULL COMMENT '创建时间',
-  `update_time` datetime NOT NULL COMMENT '更新时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`participant_id`),
   UNIQUE KEY `uk_task_member` (`task_id`,`member_id`),
   KEY `idx_member_status` (`member_id`,`status`),
@@ -318,7 +318,7 @@ CREATE TABLE IF NOT EXISTS `t_task_event` (
   `actor_id` bigint(20) unsigned DEFAULT NULL COMMENT '操作人会员ID（系统事件为空）',
   `event_type` tinyint(4) NOT NULL COMMENT '事件类型 1创建 2邀请 3接受 4拒绝 5完成 6撤回 7催办 8定时生效 9跳过',
   `content` varchar(255) NOT NULL COMMENT '事件描述',
-  `create_time` datetime NOT NULL COMMENT '发生时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '发生时间',
   PRIMARY KEY (`event_id`),
   KEY `idx_task_time` (`task_id`,`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='任务事件';
@@ -335,8 +335,8 @@ CREATE TABLE IF NOT EXISTS `t_task_notice` (
   `fields_json` varchar(2000) NOT NULL COMMENT '卡片键值对，JSON数组 [{label,value}]',
   `read_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否已读 0未读 1已读',
   `deleted_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否删除 0否 1是',
-  `create_time` datetime NOT NULL COMMENT '创建时间',
-  `update_time` datetime NOT NULL COMMENT '更新时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`notice_id`),
   KEY `idx_member_read` (`member_id`,`read_flag`,`create_time`),
   KEY `idx_task` (`task_id`)
@@ -731,7 +731,7 @@ CREATE TABLE IF NOT EXISTS `t_notice` (
   `user_view_count` int(11) NOT NULL DEFAULT 0 COMMENT '用户浏览量，传说中的uv',
   `source` varchar(1000) DEFAULT NULL COMMENT '来源',
   `author` varchar(1000) DEFAULT NULL COMMENT '作者',
-  `document_number` varchar(1000) DEFAULT NULL COMMENT '文号，如：1024创新实验室发〔2022〕字第36号',
+  `document_number` varchar(1000) DEFAULT NULL COMMENT '文号，如：发文〔2026〕字第1号',
   `deleted_flag` tinyint(1) NOT NULL DEFAULT 0,
   `create_user_id` bigint(20) DEFAULT NULL COMMENT '创建人',
   `update_time` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
@@ -902,8 +902,8 @@ CREATE TABLE IF NOT EXISTS `t_wx_order` (
   `transaction_id` varchar(64) DEFAULT NULL COMMENT '微信支付交易号',
   `pay_time` datetime DEFAULT NULL COMMENT '支付时间',
   `expire_time` datetime DEFAULT NULL COMMENT '订单过期时间（默认2小时）',
-  `create_time` datetime NOT NULL COMMENT '创建时间',
-  `update_time` datetime NOT NULL COMMENT '更新时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`order_id`),
   UNIQUE KEY `uk_order_no` (`order_no`),
   UNIQUE KEY `uk_transaction_id` (`transaction_id`),
@@ -925,7 +925,7 @@ CREATE TABLE IF NOT EXISTS `t_wx_pay_notify_log` (
   `handle_result` tinyint(1) NOT NULL DEFAULT 0 COMMENT '处理结果 0失败 1成功',
   `raw_body` text DEFAULT NULL COMMENT '原始报文（脱敏后）',
   `error_msg` varchar(500) DEFAULT NULL COMMENT '异常信息',
-  `create_time` datetime NOT NULL COMMENT '创建时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_notify_id` (`notify_id`),
   KEY `idx_out_trade_no` (`out_trade_no`)
@@ -955,7 +955,7 @@ CREATE TABLE IF NOT EXISTS `t_code_generator_config` (
 --  1. t_config        后台安全策略 2 条（密码复杂度、上传大小 30MB、登录失败锁定）
 --  2. t_department    1 个「总部」，后台员工必须有归属部门
 --  3. t_position      1 个「普通员工」
---  4. t_employee      1 个 admin 账号（超级管理员，密码沿用 SmartAdmin 默认 123456）
+--  4. t_employee      1 个 admin 账号（超级管理员，密码沿用框架初始默认 123456）
 --  5. t_menu          96 条后台菜单（77 条框架菜单 + 让我做运营 19 条），后台导航的唯一来源，不可删
 --  6. t_dict          6 本业务字典（任务 4 本 + 反馈 2 本）
 --  7. t_dict_data     30 条字典项，小程序状态/类型文案从这张表读
@@ -969,7 +969,7 @@ CREATE TABLE IF NOT EXISTS `t_code_generator_config` (
 --    t_task_event / t_task_notice / t_file / t_content_check / t_app_agreement_record / t_app_feedback
 --    t_wx_order / t_wx_pay_notify_log
 --    t_employee(除 admin) / t_role / t_role_employee / t_role_menu / t_role_data_scope
---    t_notice(12) / t_message(4) / t_smart_job(示例任务 2 个) / t_dict(GOODS_PLACE 商品地区)
+--    t_notice(12) / t_message(4) / t_smart_job(业务作业 1 个：任务到点生效与到期提醒) / t_dict(GOODS_PLACE 商品地区)
 --    演示与框架遗留表（t_goods / t_category / t_oa_* / t_help_doc* / t_change_log / t_feedback）已整表删除，见 updates/2026-10-29/03_drop_demo_tables.sql
 -- ============================================================================
 
@@ -978,15 +978,15 @@ CREATE TABLE IF NOT EXISTS `t_code_generator_config` (
 -- ----------------------------------------------------------------------------
 -- level3_protect_config 是后台「三级等保」安全策略，maxUploadFileSizeMb=30 同时约束
 -- 小程序头像与任务图上传大小。缺这条记录时后台配置页读不到值，务必保留。
+-- 不给 super_password（万能密码）设初始值：该配置一旦有值就是可绕过密码的后门，
+-- 需要时在后台「参数配置」里临时设置，用完即清空。
 INSERT INTO `t_config` (`config_name`, `config_key`, `config_value`, `remark`, `create_time`, `update_time`) VALUES
-('万能密码', 'super_password', '1024ok', '执行示例任务2', '2026-01-01 00:00:00', '2026-01-01 00:00:00');
-INSERT INTO `t_config` (`config_name`, `config_key`, `config_value`, `remark`, `create_time`, `update_time`) VALUES
-('三级等保', 'level3_protect_config', '{\n	\"fileDetectFlag\":true,\n	\"loginActiveTimeoutMinutes\":30,\n	\"loginFailLockMinutes\":30,\n	\"loginFailMaxTimes\":3,\n	\"maxUploadFileSizeMb\":30,\n	\"passwordComplexityEnabled\":true,\n	\"regularChangePasswordMonths\":3,\n	\"regularChangePasswordNotAllowRepeatTimes\":3,\n	\"twoFactorLoginEnabled\":false\n}', 'SmartJob Sample2 update', '2026-01-01 00:00:00', '2026-01-01 00:00:00');
+('三级等保', 'level3_protect_config', '{\n	\"fileDetectFlag\":true,\n	\"loginActiveTimeoutMinutes\":30,\n	\"loginFailLockMinutes\":30,\n	\"loginFailMaxTimes\":3,\n	\"maxUploadFileSizeMb\":30,\n	\"passwordComplexityEnabled\":true,\n	\"regularChangePasswordMonths\":3,\n	\"regularChangePasswordNotAllowRepeatTimes\":3,\n	\"twoFactorLoginEnabled\":false\n}', '后台安全策略（登录锁定、密码复杂度、上传大小）', '2026-01-01 00:00:00', '2026-01-01 00:00:00');
 
 -- ----------------------------------------------------------------------------
 --  2~4. 部门 / 职务 / 管理员账号
 -- ----------------------------------------------------------------------------
--- admin 密码是 argon2id 哈希，对应 SmartAdmin 默认密码 123456。
+-- admin 密码是 argon2id 哈希，对应框架初始默认密码 123456。
 -- 上线后第一件事：登录后台改密（或直接改成随机强密码）。
 -- avatar 置空：原库里的头像是开发期上传的测试文件，正式环境对象存储里不存在。
 -- administrator_flag=1 表示超级管理员，不受角色菜单限制。
@@ -1615,7 +1615,7 @@ INSERT INTO `t_app_agreement` (`agreement_id`, `type`, `title`, `version`, `cont
 -- cron 是 Spring 的 6 段式（秒 分 时 日 月 周），不要用 Quartz 的 ? 占位符。
 -- 集群部署时由 SmartJobExecutor 的 Redisson 锁互斥，只会有一个实例执行。
 INSERT INTO `t_smart_job` (`job_name`, `job_class`, `trigger_type`, `trigger_value`, `enabled_flag`, `param`, `sort`, `remark`, `deleted_flag`, `update_name`, `create_time`, `update_time`) VALUES
-('任务到点生效与到期提醒', 'net.lab1024.sa.app.module.task.job.TaskScheduleJob', 'cron', '0 * * * * *', 1, NULL, 10, '每分钟：预约任务转待接受 + 给未完成的参与人发到期提醒', 0, '系统', '2026-01-01 00:00:00', '2026-01-01 00:00:00');
+('任务到点生效与到期提醒', 'net.letmedoit.sa.app.module.task.job.TaskScheduleJob', 'cron', '0 * * * * *', 1, NULL, 10, '每分钟：预约任务转待接受 + 给未完成的参与人发到期提醒', 0, '系统', '2026-01-01 00:00:00', '2026-01-01 00:00:00');
 
 -- ----------------------------------------------------------------------------
 --  9. 公告类型
@@ -1663,7 +1663,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 --
 -- 6) 定时任务必须注册（否则到点生效与到期提醒全部静默失效）
 -- SELECT job_name, trigger_value, enabled_flag FROM t_smart_job
---  WHERE job_class = 'net.lab1024.sa.app.module.task.job.TaskScheduleJob';
+--  WHERE job_class = 'net.letmedoit.sa.app.module.task.job.TaskScheduleJob';
 --
 -- 7) 字典 6 本齐全（items 分别 6/5/2/9/4/4）
 -- SELECT d.dict_code, COUNT(x.dict_data_id) items

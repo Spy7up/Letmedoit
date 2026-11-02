@@ -2,7 +2,7 @@
 
 > 读者：接下来要在这个仓库里写代码的 AI Agent / 新同事。
 > 目标：读完这一份，就能按项目既有风格新增模块、接口、表，而不破坏现有约定。
-> 依据：SmartAdmin 官方《Java 规范 V3.0》+ **本仓库实际代码**。
+> 依据：**本仓库实际代码**与既有约定（新增写法以仓库现状为准，不以外部框架文档为准）。
 > 业务与接口设计结论见 `../../doc/design/让我做-总设计文档.md`。
 
 ---
@@ -24,7 +24,7 @@
 | 模块 | 职责 | 启动类 | 端口 | 依赖 |
 |---|---|---|---|---|
 | `sa-base` | 公共底座：工具、配置、拦截器基座、23 个 support 能力、系统级 domain | 无（jar） | — | 无 |
-| `sa-admin` | 后台管理端：员工/角色/菜单/部门 + 业务示例（类目、商品、OA） | `AdminApplication` | 1024 | sa-base |
+| `sa-admin` | 后台管理端：员工/角色/菜单/部门 + 业务页面（任务、成员、帮手、反馈、版本） | `AdminApplication` | 1024 | sa-base |
 | `sa-app` | 微信小程序 C 端：会员登录、任务与站内通知（支付待做） | `AppApplication` | 1025 | sa-base |
 
 **关键**：`sa-app` **不依赖** `sa-admin`。两个应用共享 `sa-base`，各自独立部署、独立启动类、独立端口、独立 token 体系。
@@ -73,7 +73,7 @@ sa-app/src/main/resources/{dev,...}/application.yaml          ← 小程序独�
 ### 2.1 顶层目录（sa-admin / sa-app 同构）
 
 ```
-src/main/java/net/lab1024/sa/{admin|app}
+src/main/java/net/letmedoit/sa/{admin|app}
 ├── Application.java        启动类
 ├── config/                 Web、Sa-Token、第三方等配置
 ├── constant/               全局常量、缓存 key、Swagger tag
@@ -175,7 +175,7 @@ XML 固定放：`sa-admin/src/main/resources/mapper/{business|system}/{模块}/X
 
 | 场景 | 官方文档写法 | 本项目实际写法 |
 |---|---|---|
-| 接口注释 | `@ApiOperation("xxx @author 卓大")` | `@Operation(summary = "xxx @author 卓大")`（OpenAPI3） |
+| 接口注释 | `@ApiOperation("xxx")` | `@Operation(summary = "xxx")`（OpenAPI3，不写作者署名） |
 | 类级文档分组 | `@Api(tags = "...")` | `@Tag(name = XxxSwaggerTagConst.Xxx.YYY)` |
 | 成功返回 | `ResponseDTO.succ()` / `ResponseDTO.wrap(x)` | **`ResponseDTO.ok()` / `ResponseDTO.ok(data)`** |
 | 失败返回 | `ResponseCodeConst.XXX` | `ResponseDTO.error(UserErrorCode.XXX)` / `ResponseDTO.userErrorParam("提示")` |
@@ -422,9 +422,9 @@ public interface GoodsDao extends BaseMapper<GoodsEntity> {
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.business.goods.dao.GoodsDao">
+<mapper namespace="net.letmedoit.sa.admin.module.business.goods.dao.GoodsDao">
 
-    <select id="queryByName" resultType="net.lab1024.sa.admin.module.business.goods.domain.entity.GoodsEntity">
+    <select id="queryByName" resultType="net.letmedoit.sa.admin.module.business.goods.domain.entity.GoodsEntity">
         SELECT * FROM t_goods
         WHERE deleted_flag = #{deletedFlag}
         <if test="keyword != null and keyword != ''">
@@ -433,7 +433,7 @@ public interface GoodsDao extends BaseMapper<GoodsEntity> {
         ORDER BY goods_id DESC
     </select>
 
-    <select id="queryPage" resultType="net.lab1024.sa.admin.module.business.goods.domain.vo.GoodsVO">
+    <select id="queryPage" resultType="net.letmedoit.sa.admin.module.business.goods.domain.vo.GoodsVO">
         SELECT t_goods.*, t_category.category_name
         FROM t_goods
         LEFT JOIN t_category ON t_goods.category_id = t_category.category_id
@@ -634,7 +634,7 @@ CREATE TABLE `t_coupon` (
 ### Step 2 · 建目录
 
 ```
-sa-admin/src/main/java/net/lab1024/sa/admin/module/business/coupon/
+sa-admin/src/main/java/net/letmedoit/sa/admin/module/business/coupon/
 ├── constant/CouponStatusEnum.java
 ├── controller/CouponController.java
 ├── service/CouponService.java
@@ -826,9 +826,8 @@ public class CouponController {
 
 ---
 
-## 附：官方参考资料
+## 附：本项目参考资料
 
-- 后端规范：https://smartadmin.vip/views/doc/standard/back.html
-- 高质量代码思想：https://smartadmin.vip/views/doc/standard/code.html
-- 前端规范：https://smartadmin.vip/views/doc/standard/front.html
-- 项目文档：https://smartadmin.vip
+- 业务与接口设计：`../../doc/design/让我做-总设计文档.md`
+- 数据库脚本规则：`sql/README.md`
+- 配置与凭证：`CONFIG_SECRETS.md`

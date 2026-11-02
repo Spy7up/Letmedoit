@@ -1,11 +1,7 @@
 <!--
   * 顶部菜单-递归菜单
   * 
-  * @Author:    1024创新实验室-主任：卓大 
-  * @Date:      2022-09-06 20:29:12 
-  * @Wechat:    zhuda1024 
-  * @Email:     lab1024@163.com 
-  * @Copyright  1024创新实验室 （ https://1024lab.net ），Since 2012 
+  * @author letmedoit
 -->
 <template>
   <a-menu
@@ -57,7 +53,7 @@
   }
 
   /**
-   * SmartAdmin中 router的name 就是 后端存储menu的id
+   * router 的 name 就是后端存储的菜单 id
    * 所以此处可以直接监听路由，根据路由更新菜单的选中和展开
    */
   function updateSelectKeys() {

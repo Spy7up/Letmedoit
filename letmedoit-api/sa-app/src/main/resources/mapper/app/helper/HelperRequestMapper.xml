@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.app.module.helper.dao.HelperRequestDao">
+<mapper namespace="net.letmedoit.sa.app.module.helper.dao.HelperRequestDao">
 
-    <resultMap id="requestResultMap" type="net.lab1024.sa.app.module.helper.domain.vo.HelperRequestVO">
+    <resultMap id="requestResultMap" type="net.letmedoit.sa.app.module.helper.domain.vo.HelperRequestVO">
         <id column="request_id" property="requestId"/>
         <result column="apply_message" property="applyMessage"/>
         <result column="create_time" property="createTime"/>
-        <association property="fromMember" javaType="net.lab1024.sa.app.module.task.domain.vo.TaskUserVO">
+        <association property="fromMember" javaType="net.letmedoit.sa.app.module.task.domain.vo.TaskUserVO">
             <id column="from_member_id" property="memberId"/>
             <result column="from_nickname" property="nickname"/>
             <result column="from_avatar" property="avatar"/>
@@ -31,7 +31,7 @@
     </select>
 
     <!-- 按主键查询 -->
-    <select id="queryById" resultType="net.lab1024.sa.app.module.helper.domain.entity.HelperRequestEntity">
+    <select id="queryById" resultType="net.letmedoit.sa.app.module.helper.domain.entity.HelperRequestEntity">
         SELECT request_id, from_member_id, to_member_id, apply_message, status,
                deleted_flag, create_time, update_time
         FROM t_helper_request
@@ -40,7 +40,7 @@
     </select>
 
     <!-- 两人之间是否已有待处理申请 -->
-    <select id="queryPending" resultType="net.lab1024.sa.app.module.helper.domain.entity.HelperRequestEntity">
+    <select id="queryPending" resultType="net.letmedoit.sa.app.module.helper.domain.entity.HelperRequestEntity">
         SELECT request_id, from_member_id, to_member_id, apply_message, status,
                deleted_flag, create_time, update_time
         FROM t_helper_request

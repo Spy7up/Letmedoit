@@ -15,8 +15,8 @@
 ## 目录结构
 
 ```
-net.lab1024.sa.app
-├── AppApplication                 启动类（扫描 net.lab1024.sa，仅加载 sa-base + sa-app）
+net.letmedoit.sa.app
+├── AppApplication                 启动类（扫描 net.letmedoit.sa，仅加载 sa-base + sa-app）
 ├── config
 │   ├── AppTokenConfig             StpLogic("app") + App-Token 请求头 + 独立超时策略
 │   ├── AppMvcConfig               拦截器只挂 /api/**
