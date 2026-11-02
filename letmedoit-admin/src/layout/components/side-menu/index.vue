@@ -26,7 +26,7 @@
   import { computed, nextTick, ref, watch } from 'vue';
   import { useRouter } from 'vue-router';
   import RecursionMenu from './recursion-menu.vue';
-  import logoImg from '/@/assets/images/logo/logo-mark.svg';
+  import logoImg from '/@/assets/images/logo/logo-mark.png';
   import { HOME_PAGE_NAME } from '/@/constants/system/home-const';
   import { useAppConfigStore } from '/@/store/modules/system/app-config';
 
@@ -90,6 +90,7 @@
       .logo-img {
         width: 30px;
         height: 30px;
+        border-radius: 8px;
       }
     }
 
@@ -108,6 +109,7 @@
       .logo-img {
         width: 30px;
         height: 30px;
+        border-radius: 8px;
       }
 
       .title {

@@ -43,7 +43,7 @@
   import menuEmitter from './top-expand-menu-mitt';
   import { useAppConfigStore } from '/@/store/modules/system/app-config';
   import { useUserStore } from '/@/store/modules/system/user';
-  import logoImg from '/@/assets/images/logo/logo-mark.svg';
+  import logoImg from '/@/assets/images/logo/logo-mark.png';
 
   const websiteName = computed(() => useAppConfigStore().websiteName);
   const theme = computed(() => useAppConfigStore().$state.sideMenuTheme);
@@ -146,6 +146,7 @@
     .logo-img {
       width: 30px;
       height: 30px;
+      border-radius: 8px;
     }
   }
   .top-menu {
@@ -174,6 +175,7 @@
     .logo-img {
       width: 30px;
       height: 30px;
+      border-radius: 8px;
     }
 
     .title {

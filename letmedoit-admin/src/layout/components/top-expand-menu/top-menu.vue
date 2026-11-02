@@ -130,6 +130,7 @@
     .logo-img {
       width: 30px;
       height: 30px;
+      border-radius: 8px;
     }
 
     .title {
