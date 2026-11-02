@@ -12,7 +12,9 @@
           content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=0"
     />
     <title> %VITE_APP_TITLE%</title>
-    <link rel="icon" href="/favicon.ico"/>
+    <!-- %BASE_URL% 让图标跟随部署 base（默认 / ，build:test 时是 /admin/）；
+         ?v=2 用于绕开旧图标的浏览器强缓存，换图时递增这个版本号 -->
+    <link rel="icon" type="image/x-icon" href="%BASE_URL%favicon.ico?v=2"/>
 </head>
 <body>
 <div id="app"></div>
