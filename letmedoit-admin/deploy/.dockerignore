@@ -1,0 +1,7 @@
+# 只把 dist 和 nginx.conf 送进构建上下文，其余不传
+*.tar.gz
+build/
+deploy.sh
+README.md
+nginx.conf.bak
+node_modules
