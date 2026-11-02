@@ -119,9 +119,11 @@
       align-items: center;
 
       .logo-img {
+        display: inline-block;
         width: 30px;
         height: 30px;
         border-radius: 8px;
+        vertical-align: middle;
       }
       .title {
         font-size: 16px;
