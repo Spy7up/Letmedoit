@@ -131,8 +131,9 @@
           AND p.status = 2
           AND p.complete_time &gt;= #{startTime}
           AND p.complete_time &lt; #{endTime}
-        GROUP BY DATE(p.complete_time)
-        ORDER BY DATE(p.complete_time)
+        <!-- GROUP BY 与 SELECT 日期表达式一致，兼容 only_full_group_by -->
+        GROUP BY DATE_FORMAT(p.complete_time, '%Y-%m-%d')
+        ORDER BY statDate
     </select>
 
     <select id="selectPendingHelperRequestCount" resultType="java.lang.Long">
