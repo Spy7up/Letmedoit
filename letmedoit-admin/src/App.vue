@@ -35,6 +35,10 @@
       <!--- 路由 -->
       <RouterView />
     </a-spin>
+    <!-- 管理员隐藏页脚时，仍需保证 ICP 备案号可见 -->
+    <div v-if="showFloatingBeian" class="floating-beian">
+      <BeianInfo />
+    </div>
   </a-config-provider>
 </template>
 
@@ -47,6 +51,13 @@
   import { Popover, theme } from 'ant-design-vue';
   import { themeColors } from '/@/theme/color';
   import SmartCopyIcon from '/@/components/framework/smart-copy-icon/index.vue';
+  import { useRoute } from 'vue-router';
+  import BeianInfo from '/@/components/framework/beian-info/index.vue';
+  import { PAGE_PATH_LOGIN } from '/@/constants/common-const';
+
+  const route = useRoute();
+  // 登录页自带备案条；非登录页在「隐藏页脚」时兜底展示备案号
+  const showFloatingBeian = computed(() => useAppConfigStore().$state.footerFlag === false && route.path !== PAGE_PATH_LOGIN);
 
   const antdLocale = computed(() => messages[useAppConfigStore().language].antdLocale);
   const dayjsLocale = computed(() => messages[useAppConfigStore().language].dayjsLocale);
@@ -119,5 +130,20 @@
   .smart-detail-header {
     background-color: @color-bg-container;
     padding: 10px;
+  }
+
+  // 仅在「隐藏页脚」时启用，避免备案号随页脚一起消失
+  .floating-beian {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 999;
+    padding: 4px 0;
+    text-align: center;
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.45);
+    background-color: rgba(255, 255, 255, 0.92);
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
   }
 </style>

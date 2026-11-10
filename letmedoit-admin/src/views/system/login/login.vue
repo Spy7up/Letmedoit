@@ -59,10 +59,15 @@
         </a-form-item>
       </a-form>
     </div>
+    <!-- 未登录首页同样需要悬挂 ICP 备案号 -->
+    <div class="login-beian">
+      <BeianInfo />
+    </div>
   </div>
 </template>
 <script setup>
   import { message } from 'ant-design-vue';
+  import BeianInfo from '/@/components/framework/beian-info/index.vue';
   import { onMounted, onUnmounted, reactive, ref } from 'vue';
   import { useRouter } from 'vue-router';
   import { loginApi } from '/@/api/system/login-api';
