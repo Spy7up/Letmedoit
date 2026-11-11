@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>net.lab1024</groupId>
+        <groupId>net.letmedoit</groupId>
         <artifactId>sa-parent</artifactId>
         <version>3.0.0</version>
         <relativePath>../pom.xml</relativePath>
@@ -19,7 +19,7 @@
     <dependencies>
 
         <dependency>
-            <groupId>net.lab1024</groupId>
+            <groupId>net.letmedoit</groupId>
             <artifactId>sa-base</artifactId>
             <version>3.0.0</version>
         </dependency>
@@ -32,7 +32,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>net.lab1024.sa.app.AppApplication</mainClass>
+                    <mainClass>net.letmedoit.sa.app.AppApplication</mainClass>
                 </configuration>
                 <executions>
                     <execution>

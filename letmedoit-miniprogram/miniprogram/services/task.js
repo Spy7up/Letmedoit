@@ -2,7 +2,7 @@
  * 任务领域服务
  *
  * 页面只调用这里的方法，不接触 URL、信封、枚举数值。
- * 后端接口见 letmedoit-api/docs/让我做-接口说明与联调.md 第 2.1 节。
+ * 后端接口见 doc/design/让我做-总设计文档.md 第 6.1 节。
  */
 const { http } = require('../utils/request')
 const adapt = require('./adapt')

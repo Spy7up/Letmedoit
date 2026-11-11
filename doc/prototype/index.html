@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>《让我做》原型索引</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+    background:#F7F4F1;color:#1E1B18;padding:56px 32px 96px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto}
+  h1{font-size:28px;letter-spacing:-.5px}
+  h1 span{color:#FF6B4A}
+  .sub{margin-top:8px;font-size:13px;color:#6B625B;line-height:1.7}
+  h2{font-size:14px;color:#A69C93;margin:36px 0 12px;font-weight:600;letter-spacing:1px}
+  ul{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+  a{display:block;background:#fff;border:1px solid #EFE9E3;border-radius:14px;padding:14px 16px;
+    text-decoration:none;color:#1E1B18;box-shadow:0 2px 8px rgba(60,40,20,.04);transition:border-color .15s}
+  a:hover{border-color:#FF6B4A}
+  a b{display:block;font-size:14px;margin-bottom:4px}
+  a i{font-style:normal;font-size:12px;color:#6B625B;line-height:1.5}
+  .tag{display:inline-block;font-size:11px;color:#D64C28;background:#FFEDE7;border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:2px}
+  .tag.gray{color:#8C8279;background:#F1EDE9}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>让我做 <span>·</span> 原型索引</h1>
+  <p class="sub">高保真原型按功能模块拆分，浏览器直接打开即可。设计规则的文字版见 <code>../design/让我做-总设计文档.md</code>。</p>
+
+  <h2>设计系统</h2>
+  <ul>
+    <li><a href="./design-system.html"><b>设计系统</b><i>色值 / 字号 / 间距令牌 + 状态、空态、加载规范</i></a></li>
+  </ul>
+
+  <h2>任务</h2>
+  <ul>
+    <li><a href="./task-list.html"><b>任务中心</b><i>液态玻璃 banner、收到的 / 发出的、状态筛选（2 屏）</i></a></li>
+    <li><a href="./task-create.html"><b>布置任务</b><i>多选参与者、完成条件、截止与提醒</i></a></li>
+    <li><a href="./task-create-images.html"><b>布置任务 · 附图</b><i>输入框溢出修复 + 任务附图设计</i></a></li>
+    <li><a href="./task-detail.html"><b>任务详情</b><i>每人一格进度、备注、催办与完成入口</i></a></li>
+    <li><a href="./task-detail-redesign.html"><b>任务详情 · 重设计</b><i>悬浮毛玻璃 + 接收页拆分</i></a></li>
+    <li><a href="./task-detail-proof.html"><b>任务详情 · 完成凭证</b><i>凭证图展示设计</i></a></li>
+    <li><a href="./task-complete.html"><b>完成我这份</b><i>备注 + 凭证提交</i></a></li>
+  </ul>
+
+  <h2>帮手与通知</h2>
+  <ul>
+    <li><a href="./helpers.html"><b>帮手</b><i>帮手列表、请求、内嵌添加帮手</i></a></li>
+    <li><a href="./helper-invite-covers.html"><b>帮手邀请与分享封面</b><i>邀请卡片、分享封面图</i></a></li>
+    <li><a href="./messages.html"><b>服务通知中心</b><i>与微信服务通知同构的站内卡片</i></a></li>
+  </ul>
+
+  <h2>我的与引导</h2>
+  <ul>
+    <li><a href="./mine.html"><b>我的</b><i>资料、统计、设置入口</i></a></li>
+    <li><a href="./onboarding.html"><b>首登引导</b><i>新用户头像昵称初始化</i></a></li>
+  </ul>
+
+  <h2>历史原型（仅存档，勿按此开发）</h2>
+  <ul>
+    <li><a href="./task-share-notify.html"><b>分享卡片 + 状态通知 v2<span class="tag gray">已废弃</span></b><i>基于微信订阅消息的方案；订阅消息链路已于 2026-10-26 整体移除，现仅保留站内信</i></a></li>
+  </ul>
+</div>
+</body>
+</html>

@@ -21,7 +21,7 @@ const contract = require('./contract-server')
 /* ---------------- 环境桩 ---------------- */
 
 const storage = {}
-const calls = { toast: [], nav: [], tab: [], modal: [], clipboard: [], upload: [] }
+const calls = { toast: [], nav: [], tab: [], modal: [], modalContent: [], clipboard: [], upload: [] }
 let appInstance = null
 let lastPageConfig = null
 let lastHeaders = {}
@@ -105,6 +105,7 @@ global.wx = {
   hideLoading: () => {},
   showModal: (o) => {
     calls.modal.push(o.title)
+    calls.modalContent.push(o.content)
     if (o.success) o.success({ confirm: true, content: '今晚不在家' })
   },
   showActionSheet: (o) => {
@@ -811,7 +812,13 @@ async function run() {
   check(!!minePage.data.rateText, '准时率 ' + minePage.data.rateText)
   // 版本号由接口下发：页面里没有写死的 v1.1.0，后台改一条记录就能变
   check(minePage.data.version === 'v1.1.0', '我的页版本来自接口：' + minePage.data.version)
-  check(!!minePage.data.versionNote, '版本说明也来自接口')
+  // 「关于」弹窗正文是固定文案，不再拼后台 releaseNote
+  minePage.about()
+  check(
+    calls.modalContent[calls.modalContent.length - 1] ===
+      '别人让你做的小事，说一遍就够。有事直接说，别靠记性。',
+    '关于弹窗正文为固定 slogan'
+  )
 
   // 「我的」页两个协议入口：正文来自后端，运营改内容不用发版（以前是弹窗，读不到全文）
   const navBeforeAgreement = calls.nav.length

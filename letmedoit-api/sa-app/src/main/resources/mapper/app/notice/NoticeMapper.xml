@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.app.module.notice.dao.NoticeDao">
+<mapper namespace="net.letmedoit.sa.app.module.notice.dao.NoticeDao">
 
     <!-- 批量插入通知：一次任务可能同时通知多个人 -->
     <insert id="insertBatch">
@@ -24,7 +24,7 @@
     </update>
 
     <!-- 我的通知分页 -->
-    <select id="queryPage" resultType="net.lab1024.sa.app.module.notice.domain.entity.NoticeEntity">
+    <select id="queryPage" resultType="net.letmedoit.sa.app.module.notice.domain.entity.NoticeEntity">
         SELECT
             notice_id, member_id, task_id, template_key, title, fields_json,
             read_flag, deleted_flag, create_time, update_time

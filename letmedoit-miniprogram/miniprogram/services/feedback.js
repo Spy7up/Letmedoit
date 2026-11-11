@@ -4,7 +4,7 @@
  * 页面只调这里：类型列表、提交。反馈没有「列表」接口 —— 这期是单向通道，
  * 后台处理完要回复用户时再加「我的反馈」（表里已经留好 reply_* 字段）。
  *
- * 后端接口见 letmedoit-api/docs/问题与反馈.md。
+ * 后端接口见 doc/design/让我做-总设计文档.md 第 11 章。
  */
 const { http } = require('../utils/request')
 

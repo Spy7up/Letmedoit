@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.letmedoit.sa.admin.module.business.dashboard.dao.DashboardDao">
+
+    <!--
+        按天统计的查询：GROUP BY 必须与 SELECT 中的日期表达式完全一致（同为 DATE_FORMAT），
+        不能写成 DATE(xxx)。生产 MySQL 开启 only_full_group_by，
+        两个表达式不同会被判定为「非聚合列未出现在 GROUP BY 中」而直接拒绝执行。
+    -->
+
+    <select id="selectOverview" resultType="net.letmedoit.sa.admin.module.business.dashboard.domain.vo.DashboardOverviewVO">
+        SELECT
+            (SELECT COUNT(*) FROM t_wx_member WHERE deleted_flag = 0) AS memberCount,
+            (SELECT COUNT(*) FROM t_wx_member WHERE deleted_flag = 0
+                AND create_time &gt;= CURRENT_DATE AND create_time &lt; CURRENT_DATE + INTERVAL 1 DAY) AS todayMemberCount,
+            (SELECT COUNT(DISTINCT LEAST(member_id, helper_member_id), GREATEST(member_id, helper_member_id))
+                FROM t_helper WHERE deleted_flag = 0) AS helperPairCount,
+            (SELECT COUNT(*) FROM t_task WHERE deleted_flag = 0) AS taskCount,
+            (SELECT COUNT(*) FROM t_task WHERE deleted_flag = 0
+                AND create_time &gt;= CURRENT_DATE AND create_time &lt; CURRENT_DATE + INTERVAL 1 DAY) AS todayTaskCount,
+            (SELECT COUNT(*) FROM t_task WHERE deleted_flag = 0 AND status = 3) AS completedTaskCount,
+            (SELECT COUNT(*) FROM t_task_participant p INNER JOIN t_task t ON t.task_id = p.task_id AND t.deleted_flag = 0
+                WHERE p.deleted_flag = 0 AND p.status = 2 AND p.complete_time IS NOT NULL) AS completedParticipantCount,
+            (SELECT COUNT(*) FROM t_task_participant p INNER JOIN t_task t ON t.task_id = p.task_id AND t.deleted_flag = 0
+                WHERE p.deleted_flag = 0 AND p.status = 2 AND p.complete_time IS NOT NULL
+                AND p.complete_time &lt;= t.deadline) AS onTimeParticipantCount,
+            (SELECT COUNT(*) FROM t_app_feedback WHERE deleted_flag = 0 AND status = 0) AS pendingFeedbackCount
+    </select>
+
+    <select id="selectTaskStatusList" resultType="net.letmedoit.sa.admin.module.business.dashboard.domain.vo.DashboardTaskStatusVO">
+        SELECT status, COUNT(*) AS count
+        FROM t_task
+        WHERE deleted_flag = 0
+        GROUP BY status
+        ORDER BY status
+    </select>
+
+    <select id="selectRecentMemberList" resultType="net.letmedoit.sa.admin.module.business.dashboard.domain.vo.DashboardRecentMemberVO">
+        SELECT member_id AS memberId, nickname, avatar, create_time AS createTime, last_login_time AS lastLoginTime
+        FROM t_wx_member
+        WHERE deleted_flag = 0
+        ORDER BY member_id DESC
+        LIMIT 6
+    </select>
+
+    <select id="selectMemberTrend" resultType="net.letmedoit.sa.admin.module.business.dashboard.domain.vo.DashboardTrendItemVO">
+        SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS statDate, COUNT(*) AS count
+        FROM t_wx_member
+        WHERE deleted_flag = 0
+          AND create_time &gt;= #{startTime}
+          AND create_time &lt; #{endTime}
+        GROUP BY DATE_FORMAT(create_time, '%Y-%m-%d')
+        ORDER BY statDate
+    </select>
+
+    <select id="selectTaskTrend" resultType="net.letmedoit.sa.admin.module.business.dashboard.domain.vo.DashboardTrendItemVO">
+        SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS statDate, COUNT(*) AS count
+        FROM t_task
+        WHERE deleted_flag = 0
+          AND create_time &gt;= #{startTime}
+          AND create_time &lt; #{endTime}
+        GROUP BY DATE_FORMAT(create_time, '%Y-%m-%d')
+        ORDER BY statDate
+    </select>
+
+    <select id="selectCompletedTrend" resultType="net.letmedoit.sa.admin.module.business.dashboard.domain.vo.DashboardTrendItemVO">
+        SELECT DATE_FORMAT(p.complete_time, '%Y-%m-%d') AS statDate, COUNT(*) AS count
+        FROM t_task_participant p
+        INNER JOIN t_task t ON t.task_id = p.task_id AND t.deleted_flag = 0
+        WHERE p.deleted_flag = 0
+          AND p.status = 2
+          AND p.complete_time &gt;= #{startTime}
+          AND p.complete_time &lt; #{endTime}
+        GROUP BY DATE_FORMAT(p.complete_time, '%Y-%m-%d')
+        ORDER BY statDate
+    </select>
+</mapper>

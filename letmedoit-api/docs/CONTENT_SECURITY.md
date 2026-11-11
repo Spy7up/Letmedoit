@@ -164,7 +164,7 @@ WARN ... 微信消息推送验签失败：Token 不一致。收到 signature=abc
 ## 6. 代码位置
 
 ```
-sa-app/src/main/java/net/lab1024/sa/app/
+sa-app/src/main/java/net/letmedoit/sa/app/
 ├── module/wx/WxApiService.java                     # msgSecCheck / mediaCheckAsync 封装
 ├── module/security/
 │   ├── controller/WxMessagePushController.java     # 推送入口（验签 + wxa_media_check）

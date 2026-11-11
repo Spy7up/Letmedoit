@@ -6,6 +6,9 @@ const avatar = require('../../../utils/avatar')
 const entry = require('../../../utils/entry')
 const { presentUser } = require('../../../utils/present')
 
+// 「关于」弹窗正文：固定文案，不随版本/后台更新说明变化
+const ABOUT_SLOGAN = '别人让你做的小事，说一遍就够。有事直接说，别靠记性。'
+
 Page({
   data: {
     user: null,
@@ -13,7 +16,6 @@ Page({
     rateText: '100%',
     // 版本号一律由接口下发（services/version.js），页面里不写死
     version: '',
-    versionNote: '',
   },
 
   onLoad() {
@@ -38,13 +40,13 @@ Page({
    * 版本号来自 /api/version/current（后台统一维护）
    * <p>
    * 拿不到就留空，页面照常显示 —— 版本号只影响展示，不能让它挡住其它内容。
+   * 「关于」弹窗正文不读 releaseNote，固定为 ABOUT_SLOGAN。
    */
   async loadVersion(refresh) {
     try {
       const v = await versionApi.current({ refresh })
       this.setData({
         version: v.versionLabel || v.version || '',
-        versionNote: v.releaseNote || '',
       })
     } catch (e) {
       // 接口不可用且本地没缓存：保持空，模板会自动不显示
@@ -112,10 +114,9 @@ Page({
 
   about() {
     const version = this.data.version
-    const note = this.data.versionNote ? this.data.versionNote + '\n\n' : ''
     wx.showModal({
       title: version ? '让我做 ' + version : '让我做',
-      content: note + '别人让你做的小事，说一遍就够。\n\n有事直接说，别靠记性。',
+      content: ABOUT_SLOGAN,
       showCancel: false,
       confirmText: '知道了',
     })

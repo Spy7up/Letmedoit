@@ -161,7 +161,7 @@ ORDER BY version DESC, agreement_type;
 ## 6. 代码位置
 
 ```
-sa-app/src/main/java/net/lab1024/sa/app/
+sa-app/src/main/java/net/letmedoit/sa/app/
 ├── module/agreement/
 │   ├── controller/AppAgreementController.java   # current / detail / agree
 │   ├── service/AppAgreementService.java         # 取生效版本、留痕、启动自检

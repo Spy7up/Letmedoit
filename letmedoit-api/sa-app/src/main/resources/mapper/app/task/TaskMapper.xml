@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.app.module.task.dao.TaskDao">
+<mapper namespace="net.letmedoit.sa.app.module.task.dao.TaskDao">
 
     <sql id="baseColumns">
         task_id, title, description, images, creator_id, completion_mode, status, start_time, start_notify_flag, deadline,
@@ -8,7 +8,7 @@
     </sql>
 
     <!-- 任务列表：单人单条 SQL 取完计数，避免循环查库 -->
-    <select id="queryPage" resultType="net.lab1024.sa.app.module.task.domain.vo.TaskListVO">
+    <select id="queryPage" resultType="net.letmedoit.sa.app.module.task.domain.vo.TaskListVO">
         SELECT
             t.task_id,
             t.title,
@@ -64,7 +64,7 @@
     </select>
 
     <!-- 按主键查询 -->
-    <select id="queryById" resultType="net.lab1024.sa.app.module.task.domain.entity.TaskEntity">
+    <select id="queryById" resultType="net.letmedoit.sa.app.module.task.domain.entity.TaskEntity">
         SELECT
         <include refid="baseColumns"/>
         FROM t_task
@@ -110,7 +110,7 @@
     </update>
 
     <!-- 首页摘要：三个计数一次取回 -->
-    <select id="querySummaryCount" resultType="net.lab1024.sa.app.module.task.domain.vo.TaskSummaryVO">
+    <select id="querySummaryCount" resultType="net.letmedoit.sa.app.module.task.domain.vo.TaskSummaryVO">
         SELECT
             (SELECT COUNT(1)
                FROM t_task_participant p
@@ -147,7 +147,7 @@
     </select>
 
     <!-- 在等我的人 -->
-    <select id="queryWaitingUsers" resultType="net.lab1024.sa.app.module.task.domain.vo.TaskUserVO">
+    <select id="queryWaitingUsers" resultType="net.letmedoit.sa.app.module.task.domain.vo.TaskUserVO">
         SELECT DISTINCT m.member_id AS memberId, m.nickname, m.avatar
         FROM t_task_participant p
         INNER JOIN t_task t ON p.task_id = t.task_id
@@ -167,7 +167,7 @@
     </select>
 
     <!-- 我的统计 -->
-    <select id="queryStats" resultType="net.lab1024.sa.app.module.task.domain.vo.TaskStatsVO">
+    <select id="queryStats" resultType="net.letmedoit.sa.app.module.task.domain.vo.TaskStatsVO">
         SELECT
             (SELECT COUNT(1) FROM t_task tc
               WHERE tc.creator_id = #{memberId} AND tc.deleted_flag = #{deletedFlag}) AS sentCount,
@@ -187,7 +187,7 @@
     </select>
 
     <!-- 已到生效时间的预约任务 -->
-    <select id="queryScheduledToActivate" resultType="net.lab1024.sa.app.module.task.domain.entity.TaskEntity">
+    <select id="queryScheduledToActivate" resultType="net.letmedoit.sa.app.module.task.domain.entity.TaskEntity">
         SELECT
         <include refid="baseColumns"/>
         FROM t_task
@@ -200,7 +200,7 @@
     </select>
 
     <!-- 待下发提醒的任务 -->
-    <select id="queryRemindList" resultType="net.lab1024.sa.app.module.task.domain.entity.TaskEntity">
+    <select id="queryRemindList" resultType="net.letmedoit.sa.app.module.task.domain.entity.TaskEntity">
         SELECT
         <include refid="baseColumns"/>
         FROM t_task
@@ -214,7 +214,7 @@
     <!-- 已过截止时间但还没结束的任务：逾期通知扫描。
          只扫最近一个窗口内逾期的，避免上线时把老任务一次性补发；
          是否已通知过由 Java 侧查 t_task_notice 判重（每任务只发一次）。 -->
-    <select id="queryOverdueList" resultType="net.lab1024.sa.app.module.task.domain.entity.TaskEntity">
+    <select id="queryOverdueList" resultType="net.letmedoit.sa.app.module.task.domain.entity.TaskEntity">
         SELECT
         <include refid="baseColumns"/>
         FROM t_task

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.app.module.task.dao.TaskParticipantDao">
+<mapper namespace="net.letmedoit.sa.app.module.task.dao.TaskParticipantDao">
 
     <!-- 任务被删除时，整条任务的参与者一起逻辑删除，
          否则「我收到的 / 我完成的」统计还会把删掉的任务算进去 -->
@@ -13,7 +13,7 @@
     </update>
 
     <!-- 单条任务的参与者（详情页） -->
-    <select id="queryByTaskId" resultType="net.lab1024.sa.app.module.task.domain.dto.TaskParticipantRow">
+    <select id="queryByTaskId" resultType="net.letmedoit.sa.app.module.task.domain.dto.TaskParticipantRow">
         SELECT
             p.task_id,
             p.participant_id,
@@ -33,7 +33,7 @@
     </select>
 
     <!-- 多条任务的参与者（列表页头像堆叠，批量取避免 N+1） -->
-    <select id="queryByTaskIds" resultType="net.lab1024.sa.app.module.task.domain.dto.TaskParticipantRow">
+    <select id="queryByTaskIds" resultType="net.letmedoit.sa.app.module.task.domain.dto.TaskParticipantRow">
         SELECT
             p.task_id,
             p.participant_id,
@@ -52,7 +52,7 @@
     </select>
 
     <!-- 事务内重算聚合状态用：只取状态字段 -->
-    <select id="queryEntityByTaskId" resultType="net.lab1024.sa.app.module.task.domain.entity.TaskParticipantEntity">
+    <select id="queryEntityByTaskId" resultType="net.letmedoit.sa.app.module.task.domain.entity.TaskParticipantEntity">
         SELECT participant_id, task_id, member_id, status, deleted_flag, create_time, update_time
         FROM t_task_participant
         WHERE task_id = #{taskId}
@@ -61,7 +61,7 @@
     </select>
 
     <!-- 批量查实体（定时作业用） -->
-    <select id="queryEntityByTaskIds" resultType="net.lab1024.sa.app.module.task.domain.entity.TaskParticipantEntity">
+    <select id="queryEntityByTaskIds" resultType="net.letmedoit.sa.app.module.task.domain.entity.TaskParticipantEntity">
         SELECT participant_id, task_id, member_id, status, deleted_flag, create_time, update_time
         FROM t_task_participant
         WHERE deleted_flag = #{deletedFlag}
@@ -72,7 +72,7 @@
     </select>
 
     <!-- 任务里我的那一格 -->
-    <select id="queryByTaskAndMember" resultType="net.lab1024.sa.app.module.task.domain.entity.TaskParticipantEntity">
+    <select id="queryByTaskAndMember" resultType="net.letmedoit.sa.app.module.task.domain.entity.TaskParticipantEntity">
         SELECT
             participant_id, task_id, member_id, status, complete_time, complete_remark,
             complete_images, reject_reason, deleted_flag, create_time, update_time
